@@ -13,3 +13,135 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  dateAdded     DateTime  @default(now())
+  dateUpdated   DateTime  @updatedAt
+
+  events      Event[]
+  donations   Donation[]
+  withdrawals Withdrawal[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Event {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id])
+  title       String
+  description String
+  category    Event_Category
+  date        DateTime
+  fundraiser  Fundraiser?
+  dateAdded   DateTime       @default(now())
+  dateUpdated DateTime       @updatedAt
+}
+
+enum Event_Category {
+  COMMUNITY
+  EDUCATIONAL
+  ENVIRONMENT
+  MEDICAL
+  EMERGENCY
+  ANIMALS
+  OTHER
+}
+
+model Fundraiser {
+  id             String   @id @default(uuid())
+  eventId        String   @unique
+  event          Event    @relation(fields: [eventId], references: [id])
+  targetAmount   Decimal
+  endDate        DateTime
+  animosity      Boolean
+  minimumAmount  Decimal
+  image          String?
+  raisedAmount   Decimal
+  donorCount     Int
+  totalWithdrawn Decimal
+  dateAdded      DateTime @default(now())
+  dateUpdated    DateTime @updatedAt
+
+  donations   Donation[]
+  withdrawals Withdrawal[]
+}
+
+model Donation {
+  id             String     @id @default(uuid())
+  amount         Decimal
+  fundraiserId   String
+  fundraiser     Fundraiser @relation(fields: [fundraiserId], references: [id])
+  userId         String?
+  user           User?      @relation(fields: [userId], references: [id])
+  paymentDetails Json
+  dateAdded      DateTime   @default(now())
+  dateUpdated    DateTime   @updatedAt
+}
+
+model Withdrawal {
+  id             String            @id @default(uuid())
+  amount         Decimal
+  fundraiserId   String
+  fundraiser     Fundraiser        @relation(fields: [fundraiserId], references: [id])
+  userId         String
+  user           User              @relation(fields: [userId], references: [id])
+  accountType    Account_Type
+  notes          String?
+  status         Withdrawal_Status
+  paymentDetails Json
+  recipientCode  String
+  dateAdded      DateTime          @default(now())
+  dateUpdated    DateTime          @updatedAt
+}
+
+enum Withdrawal_Status {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum Account_Type {
+  MOBILE_MONEY
+  BANK_ACCOUNT
+}
