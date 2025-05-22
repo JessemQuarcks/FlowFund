@@ -1,9 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -14,30 +14,44 @@ import { ArrowLeft } from "lucide-react"
 
 export default function CreateEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
 
-    // In a real app, this would submit to an API
     const formData = new FormData(e.currentTarget)
-    console.log({
-      title: formData.get("title"),
-      description: formData.get("description"),
-      target: formData.get("target"),
-      category: formData.get("category"),
-      endDate: formData.get("endDate"),
-      minDonation: formData.get("minDonation"),
-      maxDonation: formData.get("maxDonation"),
-      allowAnonymous: formData.get("allowAnonymous") === "on",
-    })
+    
+    try {
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        body: JSON.stringify({
+          title: formData.get("title"),
+          description: formData.get("description"),
+          target: Number(formData.get("target")),
+          category: formData.get("category"),
+          endDate: formData.get("endDate"),
+          minDonation: formData.get("minDonation") ? Number(formData.get("minDonation")) : null,
+          maxDonation: formData.get("maxDonation") ? Number(formData.get("maxDonation")) : null,
+          allowAnonymous: formData.get("allowAnonymous") === "on",
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-    // Simulate API call
-    setTimeout(() => {
+      if (!response.ok) {
+        throw new Error('Failed to create event')
+      }
+
+      const event = await response.json()
+      router.push(`/events/${event.id}`)
+    } catch (error) {
+      console.error('Failed to create event:', error)
+      alert('Failed to create event. Please try again.')
+    } finally {
       setIsSubmitting(false)
-      alert("Event created successfully!")
-      // In a real app, redirect to the new event page
-    }, 1000)
+    }
   }
 
   return (

@@ -59,16 +59,23 @@
 }
 
 .gradient-card {
-  @apply relative overflow-hidden;
+  position: relative;
+  overflow: hidden;
 }
 
 .gradient-card::before {
   content: "";
-  @apply absolute inset-0 bg-green-gradient opacity-10 rounded-lg;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to right, #22c55e, #16a34a);
+  opacity: 0.1;
+  border-radius: 0.5rem;
+  pointer-events: none;
 }
 
 .gradient-card:hover::before {
-  @apply opacity-20 transition-opacity duration-300;
+  opacity: 0.2;
+  transition: opacity 0.3s ease;
 }
 
 .gradient-border {
@@ -80,7 +87,10 @@
 }
 
 .gradient-border-content {
-  @apply bg-background rounded-lg p-6 h-full;
+  background-color: hsl(var(--background));
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  height: 100%;
 }
 
 .hero-pattern {
@@ -114,8 +124,28 @@
   background-color: #22c55e !important;
   border-color: #16a34a !important;
 }
-@media (max-width: 768px) {
-  main {
-    padding-bottom: 10rem;
-  }
+
+/* Fix for form elements */
+input,
+button,
+select,
+textarea {
+  pointer-events: auto !important;
+}
+
+/* Fix for buttons */
+button:not(:disabled),
+[role="button"]:not(:disabled) {
+  cursor: pointer !important;
+}
+
+/* Fix for checkboxes */
+input[type="checkbox"] {
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+
+/* Fix for links */
+a {
+  pointer-events: auto !important;
 }

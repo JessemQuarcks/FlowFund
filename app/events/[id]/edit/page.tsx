@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,28 +19,26 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [event, setEvent] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const router = useRouter()
 
   useEffect(() => {
-    // In a real app, this would fetch from an API
-    setTimeout(() => {
-      // Mock data for the event
-      setEvent({
-        id: params.id,
-        title: "Community Garden Project",
-        description:
-          "Help us build a community garden in the heart of downtown. This project will transform an unused lot into a vibrant space where neighbors can grow food, flowers, and community connections.",
-        longDescription:
-          "Our community garden project aims to create a sustainable, accessible green space in an urban environment. The garden will feature raised beds for vegetables, a butterfly garden, seating areas, and educational signage. We'll use sustainable practices and provide opportunities for community members of all ages and abilities to participate. Funds will go toward soil, lumber, plants, tools, irrigation systems, and educational materials.",
-        target: 5000,
-        category: "Community",
-        endDate: "2023-12-31",
-        minDonation: 5,
-        maxDonation: 1000,
-        allowAnonymous: true,
-        image: "/placeholder.svg?height=400&width=800",
-      })
-      setIsLoading(false)
-    }, 1000)
+    async function fetchEvent() {
+      try {
+        const response = await fetch(`/api/events/${params.id}`)
+        if (!response.ok) {
+          throw new Error('Failed to fetch event')
+        }
+        const data = await response.json()
+        setEvent(data)
+      } catch (error) {
+        setError('Failed to load event')
+        console.error('Error fetching event:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchEvent()
   }, [params.id])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -47,30 +46,38 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
     setIsSubmitting(true)
     setError(null)
 
-    // In a real app, this would submit to an API
     const formData = new FormData(e.currentTarget)
-    const updatedEvent = {
-      id: params.id,
-      title: formData.get("title"),
-      description: formData.get("description"),
-      longDescription: formData.get("longDescription"),
-      target: formData.get("target"),
-      category: formData.get("category"),
-      endDate: formData.get("endDate"),
-      minDonation: formData.get("minDonation"),
-      maxDonation: formData.get("maxDonation"),
-      allowAnonymous: formData.get("allowAnonymous") === "on",
-    }
+    
+    try {
+      const response = await fetch(`/api/events/${params.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: formData.get("title"),
+          description: formData.get("description"),
+          longDescription: formData.get("longDescription"),
+          target: Number(formData.get("target")),
+          category: formData.get("category"),
+          endDate: formData.get("endDate"),
+          minDonation: formData.get("minDonation") ? Number(formData.get("minDonation")) : null,
+          maxDonation: formData.get("maxDonation") ? Number(formData.get("maxDonation")) : null,
+          allowAnonymous: formData.get("allowAnonymous") === "on",
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
 
-    console.log("Updating event:", updatedEvent)
+      if (!response.ok) {
+        throw new Error('Failed to update event')
+      }
 
-    // Simulate API call
-    setTimeout(() => {
+      router.push(`/events/${params.id}`)
+    } catch (error) {
+      setError('Failed to update event. Please try again.')
+      console.error('Error updating event:', error)
+    } finally {
       setIsSubmitting(false)
-      // Simulate success
-      alert("Event updated successfully!")
-      // In a real app, redirect to the event page
-    }, 1500)
+    }
   }
 
   if (isLoading) {

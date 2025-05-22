@@ -1,17 +1,18 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+// import { Input } from "@/components/ui/input" // Comment this out for testing
 import { Label } from "@/components/ui/label"
 import { TrendingUp, Loader2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 
 export default function SignUpPage() {
+  const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -36,46 +37,46 @@ export default function SignUpPage() {
     setIsSubmitting(true)
     setError(null)
 
-    // Validate form
-    if (
-      !formData.firstName ||
-      !formData.lastName ||
-      !formData.email ||
-      !formData.password ||
-      !formData.confirmPassword
-    ) {
-      setError("Please fill in all required fields")
-      setIsSubmitting(false)
-      return
-    }
-
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match")
       setIsSubmitting(false)
       return
     }
 
-    if (!formData.agreeTerms) {
-      setError("You must agree to the Terms of Service and Privacy Policy")
+    // Basic password validation
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/
+    if (!passwordRegex.test(formData.password)) {
+      setError(
+        "Password must be at least 8 characters long and include a number and a special character."
+      )
       setIsSubmitting(false)
       return
     }
 
-    // In a real app, this would submit to an API for registration
-    console.log("Signing up with:", {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      password: formData.password,
-      agreeTerms: formData.agreeTerms,
-    })
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: `${formData.firstName} ${formData.lastName}`,
+          email: formData.email,
+          password: formData.password,
+        }),
+      })
 
-    // Simulate API call
-    setTimeout(() => {
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create account");
+      }
+
+      router.push("/signin?registered=true")
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.")
+    } finally {
       setIsSubmitting(false)
-      // Simulate success - in a real app, this would redirect to dashboard
-      window.location.href = "/dashboard"
-    }, 1500)
+    }
   }
 
   return (
@@ -101,38 +102,47 @@ export default function SignUpPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" name="firstName" value={formData.firstName} onChange={handleChange} required />
+                  <Label htmlFor="Name">Full Name</Label>
+                  {/* TEMPORARY: Replaced custom Input with standard HTML input */}
+                  <input
+                    id="firstName"
+                    name="firstName"
+                    type="text" // Specify type for standard input
+                    value={formData.firstName}
+                    onChange={handleChange}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" // Add some basic tailwind classes for styling
+                    required
+                  />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" name="lastName" value={formData.lastName} onChange={handleChange} required />
-                </div>
-              </div>
+             
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
+                {/* TEMPORARY: Replaced custom Input with standard HTML input */}
+                <input
                   id="email"
                   name="email"
                   type="email"
                   placeholder="name@example.com"
                   value={formData.email}
                   onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
                 />
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
-                <Input
+                {/* TEMPORARY: Replaced custom Input with standard HTML input */}
+                <input
                   id="password"
                   name="password"
                   type="password"
                   value={formData.password}
                   onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
                 />
                 <p className="text-xs text-muted-foreground">
@@ -142,12 +152,14 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
-                <Input
+                {/* TEMPORARY: Replaced custom Input with standard HTML input */}
+                <input
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   required
                 />
               </div>
