@@ -1,9 +1,8 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
-import { signIn } from "next-auth/react"
+import { useState, useEffect } from "react"
+import { signIn, useSession } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,6 +13,10 @@ import { TrendingUp, Loader2 } from "lucide-react"
 import { Separator } from "@/components/ui/separator"
 
 export default function SignInPage() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
@@ -21,6 +24,20 @@ export default function SignInPage() {
     password: "",
     rememberMe: false,
   })
+
+  useEffect(() => {
+    if (status === 'authenticated' && session) {
+      router.push("/dashboard")
+    }
+  }, [status, session, router])
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+      </div>
+    )
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -30,89 +47,60 @@ export default function SignInPage() {
     }))
   }
 
-  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  //   try {
-
-  //     e.preventDefault()
-  //     setIsSubmitting(true)
-  //     setError(null)
-  
-  //     // Validate form
-  //     if (!formData.email || !formData.password) {
-  //       setError("Please fill in all required fields")
-  //       setIsSubmitting(false)
-  //       return
-  //     }
-  
-  //     // In a real app, this would submit to an API for authentication
-  //     console.log("Signing in with:", {
-  //       email: formData.email,
-  //       password: formData.password,
-  //       rememberMe: formData.rememberMe,
-  //     })
-  
-  //     const res = await fetch("/api/auth", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(formData),
-  //     })
-  //     if (!res.ok) {
-  //       const errorData = await res.json()
-  //       setError(errorData.error || "An error occurred during sign-in")
-  //       setIsSubmitting(false)
-  //       return
-  //     }
-      
-  //     // Simulate API call
-  //     setTimeout(() => {
-  //       setIsSubmitting(false)
-  //       // Simulate success - in a real app, this would redirect to dashboard
-  //       window.location.href = "/dashboard"
-  //     }, 1500)
-  //   }catch(err){
-
-  //     console.log()
-  //   } 
-  // }
-
-
-const handleSubmit = async (email: string, password: string) => {
-  const result = await signIn("credentials", {
-    email,
-    password,
-    redirect: false, // Handle manually
-    callbackUrl: "/dashboard" // Where to redirect after success
-  })
-
-  if (result?.error) {
-    // Handle error (show toast/notification)
-    console.error("Login failed:", result.error)
-  } else {
-    // Redirect on success
-    window.location.href = result?.url || "/dashboard"
-  }
-}
-
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-
-  const handleGoogleSignIn = async () => {
+  const handleSubmit = async (email: string, password: string) => {
     setIsSubmitting(true)
     try {
-      const result = await signIn("google", {
-        callbackUrl,
-        redirect: true
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl
       })
+  
+      if (result?.error) {
+        setError("Invalid email or password")
+        console.error("Login failed:", result.error)
+      } else {
+        router.push(result?.url || callbackUrl)
+      }
     } catch (error) {
-      console.error("Error signing in with Google:", error)
-      setError("Failed to sign in with Google. Please try again.")
+      console.error("Sign in error:", error)
+      setError("An error occurred during sign in")
     } finally {
       setIsSubmitting(false)
     }
   }
+
+  const handleGoogleSignIn = async () => {
+    setIsSubmitting(true);
+    try {
+      const result = await signIn("google", {
+        callbackUrl,
+        redirect: false
+      });
+      
+      if (result?.error) {
+        setError("Failed to sign in with Google. Please try again.");
+        console.error("Google sign-in error:", result.error);
+      } else {
+        // Since we're using the useSession hook, we can check the session status
+        // Wait a moment for the session to update
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Check the session status after Google sign-in
+        if (status === 'authenticated') {
+          router.push(callbackUrl);
+        } else {
+          setError("Google sign-in failed to create a session");
+        }
+      }
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+      setError("Failed to sign in with Google. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-8 bg-gradient-to-br from-primary-50 to-white dark:from-primary-950 dark:to-black">
