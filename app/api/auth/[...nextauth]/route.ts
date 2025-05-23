@@ -1,13 +1,14 @@
 import { PrismaAdapter } from "@auth/prisma-adapter"
-import { PrismaClient } from "@prisma/client"
-import NextAuth from "next-auth"
+import { PrismaClient } from "@/lib/generated/prisma"
+import NextAuth, { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
 
+// Initialize Prisma Client
 const prisma = new PrismaClient()
 
-const handler = NextAuth({
+export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
@@ -18,7 +19,7 @@ const handler = NextAuth({
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null
+          return null 
         }
 
         const user = await prisma.user.findUnique({
@@ -56,11 +57,21 @@ const handler = NextAuth({
   session: {
     strategy: "jwt"
   },
+  callbacks: {
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.sub as string
+      }
+      return session
+    }
+  },
   secret: process.env.NEXTAUTH_SECRET,
   pages: {
     signIn: "/signin",
     newUser: "/signup"
   }
-})
+}
+
+const handler = NextAuth(authOptions)
 
 export { handler as GET, handler as POST }

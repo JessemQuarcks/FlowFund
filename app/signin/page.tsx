@@ -3,6 +3,8 @@
 import type React from "react"
 
 import { useState } from "react"
+import { signIn } from "next-auth/react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,31 +30,88 @@ export default function SignInPage() {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   try {
+
+  //     e.preventDefault()
+  //     setIsSubmitting(true)
+  //     setError(null)
+  
+  //     // Validate form
+  //     if (!formData.email || !formData.password) {
+  //       setError("Please fill in all required fields")
+  //       setIsSubmitting(false)
+  //       return
+  //     }
+  
+  //     // In a real app, this would submit to an API for authentication
+  //     console.log("Signing in with:", {
+  //       email: formData.email,
+  //       password: formData.password,
+  //       rememberMe: formData.rememberMe,
+  //     })
+  
+  //     const res = await fetch("/api/auth", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(formData),
+  //     })
+  //     if (!res.ok) {
+  //       const errorData = await res.json()
+  //       setError(errorData.error || "An error occurred during sign-in")
+  //       setIsSubmitting(false)
+  //       return
+  //     }
+      
+  //     // Simulate API call
+  //     setTimeout(() => {
+  //       setIsSubmitting(false)
+  //       // Simulate success - in a real app, this would redirect to dashboard
+  //       window.location.href = "/dashboard"
+  //     }, 1500)
+  //   }catch(err){
+
+  //     console.log()
+  //   } 
+  // }
+
+
+const handleSubmit = async (email: string, password: string) => {
+  const result = await signIn("credentials", {
+    email,
+    password,
+    redirect: false, // Handle manually
+    callbackUrl: "/dashboard" // Where to redirect after success
+  })
+
+  if (result?.error) {
+    // Handle error (show toast/notification)
+    console.error("Login failed:", result.error)
+  } else {
+    // Redirect on success
+    window.location.href = result?.url || "/dashboard"
+  }
+}
+
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
+
+  const handleGoogleSignIn = async () => {
     setIsSubmitting(true)
-    setError(null)
-
-    // Validate form
-    if (!formData.email || !formData.password) {
-      setError("Please fill in all required fields")
+    try {
+      const result = await signIn("google", {
+        callbackUrl,
+        redirect: true
+      })
+    } catch (error) {
+      console.error("Error signing in with Google:", error)
+      setError("Failed to sign in with Google. Please try again.")
+    } finally {
       setIsSubmitting(false)
-      return
     }
-
-    // In a real app, this would submit to an API for authentication
-    console.log("Signing in with:", {
-      email: formData.email,
-      password: formData.password,
-      rememberMe: formData.rememberMe,
-    })
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false)
-      // Simulate success - in a real app, this would redirect to dashboard
-      window.location.href = "/dashboard"
-    }, 1500)
   }
 
   return (
@@ -70,7 +129,10 @@ export default function SignInPage() {
             <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
             <CardDescription className="text-center">Sign in to your FundFlow account</CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={(e) => {
+  e.preventDefault()
+  handleSubmit(formData.email, formData.password)
+}}>
             <CardContent className="space-y-4">
               {error && (
                 <div className="p-3 text-sm text-white bg-destructive rounded-md">
@@ -140,7 +202,13 @@ export default function SignInPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Button variant="outline" type="button" className="w-full">
+                <Button 
+                  variant="outline" 
+                  type="button" 
+                  className="w-full"
+                  onClick={handleGoogleSignIn}
+                  disabled={isSubmitting}
+                >
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
