@@ -96,7 +96,7 @@ model Fundraiser {
   event Event @relation(fields: [eventId], references: [id])
   targetAmount Decimal
   endDate DateTime
-  animosity Boolean
+  anonymity Boolean
   minimumAmount Decimal
   image String?
   raisedAmount Decimal
