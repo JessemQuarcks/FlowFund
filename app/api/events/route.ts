@@ -11,10 +11,12 @@ export async function POST(request: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
+    const formData = await request.formData();
+
     const {
       event: { image, ...otherEventAttributes },
       fundraiser: fundraiserArgs,
-    } = createEventSchema.parse(await request.formData());
+    } = createEventSchema.parse(formData);
 
     //TODO: Handle file upload -> Firebase
 
@@ -37,6 +39,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(event);
   } catch (error) {
+    // TODO: Error handling for schema validation error
     console.error("Failed to create event:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
