@@ -1,99 +1,117 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { signIn, useSession } from "next-auth/react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { TrendingUp, Loader2 } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import type React from "react";
+
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { TrendingUp, Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export default function SignInPage() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
-  })
-
-  useEffect(() => {
-    if (status === 'authenticated' && session) {
-      router.push("/dashboard")
-    }
-  }, [status, session, router])
-
-  if (status === 'loading') {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
-      </div>
-    )
-  }
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
-    }))
-  }
+    }));
+  };
+
+  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  //   try {
+
+  //     e.preventDefault()
+  //     setIsSubmitting(true)
+  //     setError(null)
+
+  //     // Validate form
+  //     if (!formData.email || !formData.password) {
+  //       setError("Please fill in all required fields")
+  //       setIsSubmitting(false)
+  //       return
+  //     }
+
+  //     // In a real app, this would submit to an API for authentication
+  //     console.log("Signing in with:", {
+  //       email: formData.email,
+  //       password: formData.password,
+  //       rememberMe: formData.rememberMe,
+  //     })
+
+  //     const res = await fetch("/api/auth", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify(formData),
+  //     })
+  //     if (!res.ok) {
+  //       const errorData = await res.json()
+  //       setError(errorData.error || "An error occurred during sign-in")
+  //       setIsSubmitting(false)
+  //       return
+  //     }
+
+  //     // Simulate API call
+  //     setTimeout(() => {
+  //       setIsSubmitting(false)
+  //       // Simulate success - in a real app, this would redirect to dashboard
+  //       window.location.href = "/dashboard"
+  //     }, 1500)
+  //   }catch(err){
+
+  //     console.log()
+  //   }
+  // }
 
   const handleSubmit = async (email: string, password: string) => {
-    setIsSubmitting(true)
-    try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-        callbackUrl
-      })
-  
-      if (result?.error) {
-        setError("Invalid email or password")
-        console.error("Login failed:", result.error)
-      } else {
-        router.push(result?.url || callbackUrl)
-      }
-    } catch (error) {
-      console.error("Sign in error:", error)
-      setError("An error occurred during sign in")
-    } finally {
-      setIsSubmitting(false)
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false, // Handle manually
+      callbackUrl: "/dashboard", // Where to redirect after success
+    });
+
+    if (result?.error) {
+      // Handle error (show toast/notification)
+      console.error("Login failed:", result.error);
+    } else {
+      // Redirect on success
+      window.location.href = result?.url || "/dashboard";
     }
-  }
+  };
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
 
   const handleGoogleSignIn = async () => {
     setIsSubmitting(true);
     try {
       const result = await signIn("google", {
         callbackUrl,
-        redirect: false
+        redirect: true,
       });
-      
-      if (result?.error) {
-        setError("Failed to sign in with Google. Please try again.");
-        console.error("Google sign-in error:", result.error);
-      } else {
-        // Since we're using the useSession hook, we can check the session status
-        // Wait a moment for the session to update
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Check the session status after Google sign-in
-        if (status === 'authenticated') {
-          router.push(callbackUrl);
-        } else {
-          setError("Google sign-in failed to create a session");
-        }
-      }
     } catch (error) {
       console.error("Error signing in with Google:", error);
       setError("Failed to sign in with Google. Please try again.");
@@ -108,19 +126,27 @@ export default function SignInPage() {
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary-600" />
-            <span className="text-xl font-bold green-text-gradient">FundFlow</span>
+            <span className="text-xl font-bold green-text-gradient">
+              FundFlow
+            </span>
           </Link>
         </div>
 
         <Card className="gradient-card">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Welcome back</CardTitle>
-            <CardDescription className="text-center">Sign in to your FundFlow account</CardDescription>
+            <CardTitle className="text-2xl font-bold text-center">
+              Welcome back
+            </CardTitle>
+            <CardDescription className="text-center">
+              Sign in to your FundFlow account
+            </CardDescription>
           </CardHeader>
-          <form onSubmit={(e) => {
-  e.preventDefault()
-  handleSubmit(formData.email, formData.password)
-}}>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit(formData.email, formData.password);
+            }}
+          >
             <CardContent className="space-y-4">
               {error && (
                 <div className="p-3 text-sm text-white bg-destructive rounded-md">
@@ -144,7 +170,10 @@ export default function SignInPage() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link href="/forgot-password" className="text-xs text-primary-600 hover:underline">
+                  <Link
+                    href="/forgot-password"
+                    className="text-xs text-primary-600 hover:underline"
+                  >
                     Forgot password?
                   </Link>
                 </div>
@@ -172,10 +201,16 @@ export default function SignInPage() {
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting} variant="gradient">
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting}
+                variant="gradient"
+              >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing
+                    in...
                   </>
                 ) : (
                   "Sign In"
@@ -185,19 +220,26 @@ export default function SignInPage() {
               <div className="relative my-4">
                 <Separator />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="bg-card px-2 text-xs text-muted-foreground">OR CONTINUE WITH</span>
+                  <span className="bg-card px-2 text-xs text-muted-foreground">
+                    OR CONTINUE WITH
+                  </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <Button 
-                  variant="outline" 
-                  type="button" 
+                <Button
+                  variant="outline"
+                  type="button"
                   className="w-full"
                   onClick={handleGoogleSignIn}
                   disabled={isSubmitting}
                 >
-                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    className="mr-2 h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                       fill="#4285F4"
@@ -242,5 +284,5 @@ export default function SignInPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

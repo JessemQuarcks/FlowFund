@@ -52,7 +52,12 @@ export const authOptions: AuthOptions = {
           throw new Error("Incorrect username or password");
         }
 
-        return user;
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          image: user.image,
+        };
       },
     }),
     GoogleProvider({
@@ -61,7 +66,8 @@ export const authOptions: AuthOptions = {
     }),
   ],
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/signin",
+    newUser: "/signup",
   },
   session: {
     strategy: "jwt",
@@ -80,6 +86,7 @@ export const authOptions: AuthOptions = {
       return token;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET,
 };
 
 export function auth(
