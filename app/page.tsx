@@ -3,46 +3,19 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { MoveRight, TrendingUp, Users } from "lucide-react"
+import { prisma } from "@/lib/prisma";
 import { ThemeToggle } from "@/components/theme-toggle"
 
-export default function Home() {
-  // Featured events would come from a database in a real implementation
-  const featuredEvents = [
-    {
-      id: "1",
-      title: "Community Garden Project",
-      description: "Help us build a community garden in the heart of downtown.",
-      target: 5000,
-      raised: 3750,
-      donors: 48,
-      daysLeft: 12,
-      image: "/placeholder.svg?height=200&width=400",
+export default async function Home() {
+  // Await the database query to get the actual array
+  const featuredEvents = await prisma.event.findMany({
+    include: {
+      fundraiser: true,
     },
-    {
-      id: "2",
-      title: "Local School Fundraiser",
-      description: "Supporting our local school with new educational materials.",
-      target: 2500,
-      raised: 1800,
-      donors: 32,
-      daysLeft: 8,
-      image: "/placeholder.svg?height=200&width=400",
-    },
-    {
-      id: "3",
-      title: "Animal Shelter Renovation",
-      description: "Help us renovate our animal shelter to provide better care.",
-      target: 10000,
-      raised: 4200,
-      donors: 67,
-      daysLeft: 20,
-      image: "/placeholder.svg?height=200&width=400",
-    },
-  ]
+  });
 
   return (
     <div className="flex min-h-screen flex-col">
-
       <main className="flex-1">
         <section className="w-full py-12 md:py-24 lg:py-32 hero-pattern">
           <div className="container px-4 md:px-6">
@@ -97,7 +70,7 @@ export default function Home() {
               {featuredEvents.map((event) => (
                 <Card key={event.id} className="overflow-hidden">
                   <img
-                    src={event.image || "/placeholder.svg"}
+                    src={event.fundraiser?.image || "/placeholder.svg"}
                     alt={event.title}
                     className="aspect-video w-full object-cover"
                     width={400}
@@ -112,20 +85,27 @@ export default function Home() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span>
-                            ${event.raised.toLocaleString()} raised of ${event.target.toLocaleString()}
+                            ${event.fundraiser?.raisedAmount.toLocaleString()} raised of ${event.fundraiser?.targetAmount.toLocaleString()}
                           </span>
                           <span className="font-medium text-primary-600">
-                            {Math.round((event.raised / event.target) * 100)}%
+                            {event.fundraiser ? Math.round((Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100) : 0}%
                           </span>
                         </div>
-                        <Progress value={(event.raised / event.target) * 100} className="h-2" />
+                        <Progress 
+                          value={event.fundraiser ? (Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100 : 0} 
+                          className="h-2" 
+                        />
                       </div>
                       <div className="flex justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          <span>{event.donors} donors</span>
+                          <span>{event.fundraiser?.donorCount || 0} donors</span>
                         </div>
-                        <div>{event.daysLeft} days left</div>
+                        <div>
+                          {event.fundraiser?.endDate 
+                            ? Math.max(0, Math.ceil((new Date(event.fundraiser.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) 
+                            : 0} days left
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -245,5 +225,5 @@ export default function Home() {
         </div>
       </footer>
     </div>
-  )
+  );
 }

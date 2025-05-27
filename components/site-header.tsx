@@ -31,11 +31,53 @@ export function SiteHeader() {
   return (
     <>
       {/* Mobile Top Logo - Hidden on homepage */}
-      <div className={`md:hidden w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b ${pathname === '/' ? 'hidden' : ''}`}>
-        <div className="container py-3 flex justify-center">
+      <div className={`sticky top-0 z-10 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b md:hidden`}>
+        <div className="container py-3 flex justify-between">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary-600" />
             <span className="text-xl font-bold green-text-gradient">FundFlow</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <ThemeToggle />
+            
+            {session?.user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={session.user.image || undefined} alt={session.user.name || undefined} />
+                      <AvatarFallback>
+                        {firstName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56" align="end" forceMount>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard">Dashboard</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/profile">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link href="/api/auth/signout">Log out</Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <>
+                <Link href="/signin">
+                  <Button variant="outline" size="sm">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button size="sm" variant="gradient">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
