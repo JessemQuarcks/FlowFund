@@ -5,77 +5,46 @@ import { Progress } from "@/components/ui/progress"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Users, Clock, Filter } from "lucide-react"
+import { prisma } from "@/lib/prisma"
 
-export default function EventsPage() {
-  // In a real app, this would be fetched from a database
-  const events = [
-    {
-      id: "1",
-      title: "Community Garden Project",
-      description: "Help us build a community garden in the heart of downtown.",
-      target: 5000,
-      raised: 3750,
-      donors: 48,
-      daysLeft: 12,
-      category: "Community",
-      image: "/placeholder.svg?height=200&width=400",
+export default async function EventsPage() {
+  // Fetch events from database with their fundraiser data
+  const events = await prisma.event.findMany({
+    include: {
+      fundraiser: true,
+      user: {
+        select: {
+          name: true,
+        }
+      }
     },
-    {
-      id: "2",
-      title: "Local School Fundraiser",
-      description: "Supporting our local school with new educational materials.",
-      target: 2500,
-      raised: 1800,
-      donors: 32,
-      daysLeft: 8,
-      category: "Education",
-      image: "/placeholder.svg?height=200&width=400",
-    },
-    {
-      id: "3",
-      title: "Animal Shelter Renovation",
-      description: "Help us renovate our animal shelter to provide better care.",
-      target: 10000,
-      raised: 4200,
-      donors: 67,
-      daysLeft: 20,
-      category: "Animals",
-      image: "/placeholder.svg?height=200&width=400",
-    },
-    {
-      id: "4",
-      title: "Medical Treatment Fund",
-      description: "Support Sarah's cancer treatment and recovery journey.",
-      target: 25000,
-      raised: 18750,
-      donors: 215,
-      daysLeft: 30,
-      category: "Medical",
-      image: "/placeholder.svg?height=200&width=400",
-    },
-    {
-      id: "5",
-      title: "Disaster Relief Effort",
-      description: "Providing essential supplies to families affected by recent floods.",
-      target: 15000,
-      raised: 9800,
-      donors: 124,
-      daysLeft: 15,
-      category: "Emergency",
-      image: "/placeholder.svg?height=200&width=400",
-    },
-    {
-      id: "6",
-      title: "Youth Sports Program",
-      description: "Funding equipment and travel for underprivileged youth sports teams.",
-      target: 7500,
-      raised: 3200,
-      donors: 45,
-      daysLeft: 25,
-      category: "Community",
-      image: "/placeholder.svg?height=200&width=400",
-    },
-  ]
+    orderBy: {
+      dateAdded: 'desc'
+    }
+  });
+
+  // Helper function to get category display name
+  const getCategoryDisplayName = (category: string) => {
+    const categoryMap: { [key: string]: string } = {
+      COMMUNITY: "Community",
+      EDUCATIONAL: "Education", 
+      ENVIRONMENT: "Environment",
+      MEDICAL: "Medical",
+      NONPROFIT: "Nonprofit",
+      EMERGENCY: "Emergency",
+      ANIMALS: "Animals",
+      OTHER: "Other"
+    };
+    return categoryMap[category] || category;
+  };
+
+  // Helper function to calculate days left
+  const getDaysLeft = (endDate: Date | null) => {
+    if (!endDate) return 0;
+    const now = new Date();
+    const diff = endDate.getTime() - now.getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  };
 
   return (
     <div className="container py-8">
@@ -116,13 +85,14 @@ export default function EventsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="community">Community</SelectItem>
-                    <SelectItem value="education">Education</SelectItem>
-                    <SelectItem value="medical">Medical</SelectItem>
-                    <SelectItem value="emergency">Emergency</SelectItem>
-                    <SelectItem value="animals">Animals</SelectItem>
-                    <SelectItem value="environment">Environment</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
+                    <SelectItem value="COMMUNITY">Community</SelectItem>
+                    <SelectItem value="EDUCATIONAL">Education</SelectItem>
+                    <SelectItem value="MEDICAL">Medical</SelectItem>
+                    <SelectItem value="EMERGENCY">Emergency</SelectItem>
+                    <SelectItem value="ANIMALS">Animals</SelectItem>
+                    <SelectItem value="ENVIRONMENT">Environment</SelectItem>
+                    <SelectItem value="NONPROFIT">Nonprofit</SelectItem>
+                    <SelectItem value="OTHER">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -159,54 +129,79 @@ export default function EventsPage() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {events.map((event) => (
-            <Card key={event.id} className="overflow-hidden">
-              <img
-                src={event.image || "/placeholder.svg"}
-                alt={event.title}
-                className="aspect-video w-full object-cover"
-                width={400}
-                height={200}
-              />
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
-                    {event.category}
-                  </span>
-                </div>
-                <CardTitle className="line-clamp-1">{event.title}</CardTitle>
-                <CardDescription className="line-clamp-2">{event.description}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span>
-                        ${event.raised.toLocaleString()} raised of ${event.target.toLocaleString()}
-                      </span>
-                      <span>{Math.round((event.raised / event.target) * 100)}%</span>
-                    </div>
-                    <Progress value={(event.raised / event.target) * 100} className="h-2" />
+          {events.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground">No fundraisers found. Be the first to create one!</p>
+              <Link href="/events/create" className="mt-4 inline-block">
+                <Button>Start a Fundraiser</Button>
+              </Link>
+            </div>
+          ) : (
+            events.map((event) => (
+              <Card key={event.id} className="overflow-hidden">
+                <img
+                  src={event.fundraiser?.image || "/placeholder.svg?height=200&width=400"}
+                  alt={event.title}
+                  className="aspect-video w-full object-cover"
+                  width={400}
+                  height={200}
+                />
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium">
+                      {getCategoryDisplayName(event.category)}
+                    </span>
                   </div>
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      <span>{event.donors} donors</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{event.daysLeft} days left</span>
-                    </div>
+                  <CardTitle className="line-clamp-1">{event.title}</CardTitle>
+                  <CardDescription className="line-clamp-2">{event.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {event.fundraiser && (
+                      <>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span>
+                              ${Number(event.fundraiser.raisedAmount).toLocaleString()} raised of ${Number(event.fundraiser.targetAmount).toLocaleString()}
+                            </span>
+                            <span className="font-medium text-primary-600">
+                              {Math.round((Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100)}%
+                            </span>
+                          </div>
+                          <Progress 
+                            value={(Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100} 
+                            className="h-2" 
+                          />
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Users className="h-4 w-4" />
+                            <span>{event.fundraiser.donorCount} donors</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            <span>{getDaysLeft(event.fundraiser.endDate)} days left</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    {!event.fundraiser && (
+                      <div className="text-sm text-muted-foreground">
+                        <p>Event details only - no fundraising component</p>
+                      </div>
+                    )}
                   </div>
-                </div>
-              </CardContent>
-              <CardFooter>
-                <Link href={`/events/${event.id}`} className="w-full">
-                  <Button className="w-full">View Fundraiser</Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
+                </CardContent>
+                <CardFooter>
+                  <Link href={`/events/${event.id}`} className="w-full">
+                    <Button className="w-full">
+                      {event.fundraiser ? 'Donate Now' : 'View Event'}
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))
+          )}
         </div>
       </div>
     </div>
