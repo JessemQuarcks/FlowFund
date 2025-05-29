@@ -94,16 +94,6 @@ export async function POST(request: Request) {
       console.log("Upload successful:", console.log(uploadResult));
     }
 
-    // try {
-    //   const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    //   console.log("Available buckets:", buckets);
-    //   if (bucketsError) {
-    //     console.error("Failed to list buckets:", bucketsError);
-    //   }
-    // } catch (testError) {
-    //   console.error("Supabase connection test failed:", testError);
-    // }
-
     const event = await prisma.event.create({
       data: {
         ...otherEventAttributes,

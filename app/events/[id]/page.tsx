@@ -14,9 +14,9 @@ import { DonationForm } from "@/components/donation-form";
 import { DonorsList } from "@/components/donors-list";
 import { prisma } from "@/lib/prisma"; // Import prisma client
 
-export default async function EventPage({ params }: { params: { id: string } }) {
-  const { id } = params; // No need to await params, it's already available
-
+export default async function EventPage({ params }: { params:Promise<{ id: string }> }) {
+   // No need to await params, it's already available
+   const {id}= await params;
   // Fetch the event and its associated fundraiser from the database
   const event = await prisma.event.findUnique({
     where: {

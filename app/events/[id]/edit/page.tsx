@@ -1,8 +1,6 @@
 "use client"
-
 import type React from "react"
-
-import { useState, useEffect } from "react"
+import { useState, useEffect,use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -14,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ArrowLeft, Loader2 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
-export default function EditEventPage({ params }: { params: { id: string } }) {
+export default function EditEventPage({ params }: { params:Promise<{ id: string }> }) {
+  const {id} =use(params);
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [event, setEvent] = useState<any>(null)
@@ -24,7 +23,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function fetchEvent() {
       try {
-        const response = await fetch(`/api/events/${params.id}`)
+        const response = await fetch(`/api/events/${id}`)
         if (!response.ok) {
           throw new Error('Failed to fetch event')
         }
@@ -39,7 +38,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
     }
 
     fetchEvent()
-  }, [params.id])
+  }, [id])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -49,12 +48,11 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
     const formData = new FormData(e.currentTarget)
     
     try {
-      const response = await fetch(`/api/events/${params.id}`, {
+      const response = await fetch(`/api/events/${id}`, {
         method: 'PATCH',
         body: JSON.stringify({
           title: formData.get("title"),
           description: formData.get("description"),
-          longDescription: formData.get("longDescription"),
           target: Number(formData.get("target")),
           category: formData.get("category"),
           endDate: formData.get("endDate"),
@@ -71,7 +69,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
         throw new Error('Failed to update event')
       }
 
-      router.push(`/events/${params.id}`)
+      router.push(`/events/${id}`)
     } catch (error) {
       setError('Failed to update event. Please try again.')
       console.error('Error updating event:', error)
@@ -110,7 +108,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
   return (
     <div className="container py-8 max-w-3xl">
       <Link
-        href={`/events/${params.id}`}
+        href={`/events/${id}`}
         className="flex items-center gap-2 text-muted-foreground mb-6 hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
@@ -143,18 +141,6 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
                 name="description"
                 defaultValue={event.description}
                 placeholder="A brief summary of your fundraiser (shown in listings)"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="longDescription">Full Description</Label>
-              <Textarea
-                id="longDescription"
-                name="longDescription"
-                defaultValue={event.longDescription}
-                placeholder="Detailed description of your fundraiser"
-                className="min-h-32"
                 required
               />
             </div>
@@ -205,19 +191,6 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
                     defaultValue={event.minDonation}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="maxDonation" className="text-xs text-muted-foreground">
-                    Maximum ($)
-                  </Label>
-                  <Input
-                    id="maxDonation"
-                    name="maxDonation"
-                    type="number"
-                    min="1"
-                    step="1"
-                    defaultValue={event.maxDonation}
-                  />
-                </div>
               </div>
             </div>
 
@@ -251,7 +224,7 @@ export default function EditEventPage({ params }: { params: { id: string } }) {
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button variant="outline" type="button" asChild>
-              <Link href={`/events/${params.id}`}>Cancel</Link>
+              <Link href={`/events/${id}`}>Cancel</Link>
             </Button>
             <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
