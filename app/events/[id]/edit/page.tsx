@@ -9,8 +9,23 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, Loader2, Upload, X } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+interface EventData {
+  id: string
+  title: string
+  description: string
+  category: string
+  target: number
+  endDate: string
+  minDonation: number | null
+  maxDonation: number | null
+  allowAnonymous: boolean
+  image: string | null
+  raisedAmount: number
+  donorCount: number
+}
 
 export default function EditEventPage({ params }: { params:Promise<{ id: string }> }) {
   const {id} =use(params);
@@ -18,6 +33,8 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [event, setEvent] = useState<any>(null)
   const [error, setError] = useState<string | null>(null)
+  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
@@ -29,6 +46,7 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
         }
         const data = await response.json()
         setEvent(data)
+        setImagePreview(data.image)
       } catch (error) {
         setError('Failed to load event')
         console.error('Error fetching event:', error)
@@ -40,13 +58,53 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
     fetchEvent()
   }, [id])
 
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError('Image file size must be less than 5MB')
+        return
+      }
+      
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file')
+        return
+      }
+
+      setSelectedImage(file)
+      
+      // Create preview
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+      setError(null)
+    }
+  }
+
+  const removeImage = () => {
+    setSelectedImage(null)
+    setImagePreview(event?.image || null) // Reset to original image
+    // Reset file input
+    const fileInput = document.getElementById('image') as HTMLInputElement
+    if (fileInput) {
+      fileInput.value = ''
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
     setError(null)
 
+
     const formData = new FormData(e.currentTarget)
-    
+    if (selectedImage) {
+      formData.set('image', selectedImage)
+    }    
+
+
     try {
       const response = await fetch(`/api/events/${id}`, {
         method: 'PATCH',
@@ -66,6 +124,7 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
       })
 
       if (!response.ok) {
+        const errorData = await response.json()
         throw new Error('Failed to update event')
       }
 
@@ -207,19 +266,56 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
 
             <div className="space-y-2">
               <Label htmlFor="image">Cover Image</Label>
+              {imagePreview && (
+                <div className="relative inline-block">
+                  <img
+                    src={imagePreview}
+                    alt="Event cover image"
+                    className="h-32 w-64 rounded-lg object-cover border"
+                    width={150}
+                    height={110}
+                  />
+                  {selectedImage && (
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
+                      onClick={removeImage}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
+              )}
+
               <div className="flex items-center gap-4">
-                <img
-                  src={event.image || "/placeholder.svg"}
-                  alt="Current cover image"
-                  className="h-20 w-40 rounded object-cover"
-                  width={160}
-                  height={80}
-                />
-                <Input id="image" name="image" type="file" accept="image/*" />
+                <div className="flex-1">
+                  <Input
+                    id="image"
+                    name="image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="cursor-pointer"
+                  />
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  <span>Upload new image</span>
+                </div>
               </div>
+              
               <p className="text-xs text-muted-foreground">
-                Leave empty to keep current image. Recommended size: 1200x630 pixels. Max file size: 5MB.
+                Recommended size: 1200x630 pixels. Max file size: 5MB. 
+                Supported formats: JPG, PNG, WebP.
               </p>
+              
+              {selectedImage && (
+                <p className="text-xs text-green-600">
+                  New image selected: {selectedImage.name}
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex justify-between">
