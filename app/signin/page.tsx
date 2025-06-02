@@ -37,81 +37,105 @@ export default function SignInPage() {
     }));
   };
 
-  // const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  //   try {
-
-  //     e.preventDefault()
-  //     setIsSubmitting(true)
-  //     setError(null)
-
-  //     // Validate form
-  //     if (!formData.email || !formData.password) {
-  //       setError("Please fill in all required fields")
-  //       setIsSubmitting(false)
-  //       return
-  //     }
-
-  //     // In a real app, this would submit to an API for authentication
-  //     console.log("Signing in with:", {
-  //       email: formData.email,
-  //       password: formData.password,
-  //       rememberMe: formData.rememberMe,
-  //     })
-
-  //     const res = await fetch("/api/auth", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(formData),
-  //     })
-  //     if (!res.ok) {
-  //       const errorData = await res.json()
-  //       setError(errorData.error || "An error occurred during sign-in")
-  //       setIsSubmitting(false)
-  //       return
-  //     }
-
-  //     // Simulate API call
-  //     setTimeout(() => {
-  //       setIsSubmitting(false)
-  //       // Simulate success - in a real app, this would redirect to dashboard
-  //       window.location.href = "/dashboard"
-  //     }, 1500)
-  //   }catch(err){
-
-  //     console.log()
-  //   }
-  // }
-
   const handleSubmit = async (email: string, password: string) => {
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false, // Handle manually
-      callbackUrl: "/dashboard", // Where to redirect after success
-    });
+    try {
+      setIsSubmitting(true);
+      setError(null);
 
-    if (result?.error) {
-      // Handle error (show toast/notification)
-      console.error("Login failed:", result.error);
-    } else {
-      // Redirect on success
-      window.location.href = result?.url || "/dashboard";
+      // Basic validation
+      if (!email.trim() || !password.trim()) {
+        setError("Please fill in all required fields");
+        return;
+      }
+
+      // Email format validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        setError("Please enter a valid email address");
+        return;
+      }
+
+      // Password length validation
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters long");
+        return;
+      }
+
+      const result = await signIn("credentials", {
+        email,
+        password,
+        redirect: false,
+        callbackUrl: "/dashboard",
+      });
+
+      if (!result) {
+        setError("An unexpected error occurred. Please try again.");
+        return;
+      }
+
+      if (result.error) {
+        // Handle specific error cases
+        switch (result.error) {
+          case "CredentialsSignin":
+            setError("Invalid email or password");
+            break;
+          case "AccessDenied":
+            setError("Your account has been disabled. Please contact support.");
+            break;
+          default:
+            setError("Failed to sign in. Please try again.");
+        }
+        return;
+      }
+
+      // Successful login
+      window.location.href = result.url || "/dashboard";
+
+    } catch (err) {
+      setError("An unexpected error occurred. Please try again later.");
+      console.error("Sign-in error:", err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
-
   const handleGoogleSignIn = async () => {
-    setIsSubmitting(true);
     try {
+      setIsSubmitting(true);
+      setError(null);
+
       const result = await signIn("google", {
         callbackUrl,
-        redirect: true,
+        redirect: false,
       });
+
+      if (result?.error) {
+        switch (result.error) {
+          case "AccessDenied":
+            setError("Access denied by Google. Please try again.");
+            break;
+          case "OAuthSignin":
+            setError("Error occurred during Google sign-in. Please try again.");
+            break;
+          case "OAuthCallback":
+            setError("Error during Google authentication. Please try again.");
+            break;
+          case "OAuthCreateAccount":
+            setError("Could not create account with Google. Please try again.");
+            break;
+          case "EmailCreateAccount":
+            setError("Could not create account. Email may be already in use.");
+            break;
+          case "Callback":
+            setError("Invalid callback from Google. Please try again.");
+            break;
+          default:
+            setError("Failed to sign in with Google. Please try again.");
+        }
+      } else if (result?.url) {
+        // Successful login - redirect
+        window.location.href = result.url;
+      }
     } catch (error) {
       console.error("Error signing in with Google:", error);
       setError("Failed to sign in with Google. Please try again.");
@@ -119,6 +143,25 @@ export default function SignInPage() {
       setIsSubmitting(false);
     }
   };
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+
+  // const handleGoogleSignIn = async () => {
+  //   setIsSubmitting(true);
+  //   try {
+  //     const result = await signIn("google", {
+  //       callbackUrl,
+  //       redirect: true,
+  //     });
+  //   } catch (error) {
+  //     console.error("Error signing in with Google:", error);
+  //     setError("Failed to sign in with Google. Please try again.");
+  //   } finally {
+  //     setIsSubmitting(false);
+  //   }
+  // };
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-8 bg-gradient-to-br from-primary-50 to-white dark:from-primary-950 dark:to-black">

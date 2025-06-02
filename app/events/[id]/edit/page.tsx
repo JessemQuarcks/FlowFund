@@ -99,36 +99,34 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
     setError(null)
 
 
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(e.currentTarget) 
+    formData.append("title", e.currentTarget.title)
+    formData.append("description", e.currentTarget.description.value)
+    formData.append("target", e.currentTarget.target)
+     const category = (document.querySelector('select[name="category"]') as HTMLSelectElement)?.value
+  if (category) {
+    formData.set("category", category)
+  }
+    formData.append("endDate", e.currentTarget.endDate.value)
+    formData.append("minDonation", e.currentTarget.minDonation?.value || '')
+    formData.append("maxDonation", e.currentTarget.maxDonation?.value || '')
+    formData.append("allowAnonymous", e.currentTarget.allowAnonymous.checked ? 'true' : 'false')
     if (selectedImage) {
-      formData.set('image', selectedImage)
-    }    
-
-
+      formData.append("image", selectedImage)
+    }
     try {
       const response = await fetch(`/api/events/${id}`, {
         method: 'PATCH',
-        body: JSON.stringify({
-          title: formData.get("title"),
-          description: formData.get("description"),
-          target: Number(formData.get("target")),
-          category: formData.get("category"),
-          endDate: formData.get("endDate"),
-          minDonation: formData.get("minDonation") ? Number(formData.get("minDonation")) : null,
-          maxDonation: formData.get("maxDonation") ? Number(formData.get("maxDonation")) : null,
-          allowAnonymous: formData.get("allowAnonymous") === "on",
-        }),
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
+        body: formData,
+      });
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error('Failed to update event')
+        const errorData = await response.json();
+        throw new Error(`Failed to update event: ${errorData.message}`);
       }
-
-      router.push(`/events/${id}`)
+      const result = await response.json();
+      
+      // Update redirect to dashboard
+      router.push('/dashboard');
     } catch (error) {
       setError('Failed to update event. Please try again.')
       console.error('Error updating event:', error)
@@ -167,11 +165,11 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
   return (
     <div className="container py-8 max-w-3xl">
       <Link
-        href={`/events/${id}`}
+        href="/dashboard"
         className="flex items-center gap-2 text-muted-foreground mb-6 hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>Back to Event</span>
+        <span>Return to Dashboard</span>
       </Link>
 
       <Card>
@@ -267,13 +265,13 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
             <div className="space-y-2">
               <Label htmlFor="image">Cover Image</Label>
               {imagePreview && (
-                <div className="relative inline-block">
+                <div className="relative inline">
                   <img
                     src={imagePreview}
                     alt="Event cover image"
-                    className="h-32 w-64 rounded-lg object-cover border"
-                    width={150}
-                    height={110}
+                    className="h-32 w-32 rounded-lg object-cover border "
+                    width={10}
+                    height={8}
                   />
                   {selectedImage && (
                     <Button

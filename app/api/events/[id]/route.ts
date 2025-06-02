@@ -7,7 +7,18 @@ import { authOptions } from "@/lib/auth";
 import { cloudinary } from "@/lib/cloudinary";
 import { v4 as uuidv4 } from "uuid";
 import { UploadApiResponse } from "cloudinary";
+import { Event_Category } from "@/lib/generated/prisma";
 
+
+
+
+
+
+function extractPublicId(url: string): string {
+  const parts = url.split('/')
+  const filename = parts[parts.length - 1]
+  return `event-images/${filename.split('.')[0]}`
+}
 // GET - Fetch single event
 export async function GET(
   request: Request,
@@ -64,20 +75,20 @@ export async function GET(
 }
 
 // PATCH - Update event
-export async function  PATCH(
+export async function PATCH(
   request: Request,
-  { params }: { params:Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const {id} = await params;
+    const { id } = await params;
     const session = await getServerSession(authOptions);
+
     if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if event exists and user owns it
     const existingEvent = await prisma.event.findUnique({
-      where:{id},
+      where: { id },
       include: { fundraiser: true },
     });
 
@@ -89,92 +100,84 @@ export async function  PATCH(
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
-    const contentType = request.headers.get("content-type");
-    let updateData: any;
-    let imageFile: File | null = null;
-
-    if (contentType?.includes("multipart/form-data")) {
-      // Handle form data with file upload
-      const formData = await request.formData();
-      imageFile = formData.get("image") as File | null;
-      
-      updateData = {
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
-        target: Number(formData.get("target")),
-        category: formData.get("category") as string,
-        endDate: formData.get("endDate") as string,
-        minDonation: formData.get("minDonation") ? Number(formData.get("minDonation")) : null,
-        maxDonation: formData.get("maxDonation") ? Number(formData.get("maxDonation")) : null,
-        allowAnonymous: formData.get("allowAnonymous") === "on" || formData.get("allowAnonymous") === "true",
-      };
-    } else {
-      // Handle JSON data
-      updateData = await request.json();
+    const formData = await request.formData();
+    const category= formData.get("category") as string
+    const validCategories = ["COMMUNITY", "EDUCATION", "MEDICAL", "EMERGENCY", "NONPROFIT", "ANIMALS", "ENVIRONMENT", "OTHER"]
+    if (!validCategories.includes(category.toUpperCase())) {
+      return NextResponse.json(
+        { message: "Invalid category" },
+        { status: 400 }
+      )
     }
+    const updateData = {
+      title: formData.get("title") as string,
+      description: formData.get("description") as string,
+      category: category.toUpperCase() as Event_Category,
+      target: Number(formData.get("target")),
+      endDate: formData.get("endDate") as string,
+      minDonation: Number(formData.get("minDonation")),
+      allowAnonymous: formData.get("allowAnonymous") === "true",
+    };
+    const imageFile = formData.get("image") as File | null;
 
-    let savedImageUrl: string | undefined = existingEvent.fundraiser?.image || undefined;
+    let imageInfo = {
+      oldImageDeleted: false,
+      oldPublicId: null as string | null,
+      newImageUrl: null as string | null,
+      newPublicId: null as string | null,
+    };
 
-    // Handle image upload if new image is provided
     if (imageFile && imageFile.size > 0) {
-      // Delete old image from Cloudinary if it exists
       if (existingEvent.fundraiser?.image) {
         try {
-          // Extract public_id from the URL
-          const urlParts = existingEvent.fundraiser.image.split('/');
-          const publicIdWithExtension = urlParts[urlParts.length - 1];
-          const publicId = `event-images/${publicIdWithExtension.split('.')[0]}`;
-          
+          const oldUrl = existingEvent.fundraiser.image;
+          const publicId = extractPublicId(oldUrl);
+          imageInfo.oldPublicId = publicId;
           await cloudinary.uploader.destroy(publicId);
+          imageInfo.oldImageDeleted = true;
+          console.log(`Old image deleted successfully: ${publicId}`);
         } catch (deleteError) {
           console.error("Failed to delete old image:", deleteError);
-          // Continue with upload even if deletion fails
         }
       }
 
-      // Upload new image
-      const arrayBuffer = await imageFile.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-      const publicId = uuidv4();
+      try {
+        const arrayBuffer = await imageFile.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const publicId = `event-images/${uuidv4()}`;
 
-      const uploadResult: UploadApiResponse | undefined = await new Promise((resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream(
+        const uploadResult = await new Promise<UploadApiResponse>((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
             {
               folder: "event-images",
-              resource_type: "image",
+              resource_type: "auto",
               public_id: publicId,
             },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          )
-          .end(buffer);
-      });
+            (error, result) => (error ? reject(error) : resolve(result!))
+          ).end(buffer);
+        });
 
-      if (!uploadResult || typeof uploadResult === "string") {
-        console.error("Cloudinary upload failed:", uploadResult);
+        imageInfo.newImageUrl = uploadResult.secure_url;
+        imageInfo.newPublicId = uploadResult.public_id;
+        console.log(`Image uploaded successfully: ${uploadResult.public_id}`);
+      } catch (uploadError) {
+        console.error("Failed to upload image:", uploadError);
         return NextResponse.json(
-          { error: "Failed to upload image" },
+          { message: "Failed to upload image" },
           { status: 500 }
         );
       }
-
-      savedImageUrl = uploadResult.url;
     }
 
-    // Update event
     const updatedEvent = await prisma.event.update({
-      where: {id},
+      where: { id },
       data: {
         title: updateData.title,
         description: updateData.description,
-        category: updateData.category.toUpperCase(),
+        category: updateData.category,
       },
     });
 
-    // Update fundraiser if it exists
     if (existingEvent.fundraiser) {
       await prisma.fundraiser.update({
         where: { id: existingEvent.fundraiser.id },
@@ -183,14 +186,15 @@ export async function  PATCH(
           endDate: new Date(updateData.endDate),
           minimumAmount: updateData.minDonation || 0,
           anonymity: updateData.allowAnonymous,
-          image: savedImageUrl,
+          image: imageInfo.newImageUrl || existingEvent.fundraiser.image,
         },
       });
     }
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       message: "Event updated successfully",
-      event: updatedEvent 
+      event: updatedEvent,
+      imageInfo,
     });
   } catch (error) {
     console.error("Failed to update event:", error);
