@@ -190,6 +190,7 @@ export default function EditEventPage({
 
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 name="event.description"

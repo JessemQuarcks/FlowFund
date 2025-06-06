@@ -47,7 +47,11 @@ export function DonationForm({ eventId }: { eventId: string }) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         <Label>Donation Amount</Label>
-        <RadioGroup value={amount} onValueChange={setAmount} className="grid grid-cols-3 gap-2">
+        <RadioGroup
+          value={amount}
+          onValueChange={setAmount}
+          className="grid grid-cols-3 gap-2"
+        >
           <Label
             htmlFor="amount-25"
             className={`flex cursor-pointer items-center justify-center rounded-md border p-2 text-center ${
@@ -57,7 +61,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
             }`}
           >
             <RadioGroupItem value="25" id="amount-25" className="sr-only" />
-            $25
+            ₵25
           </Label>
           <Label
             htmlFor="amount-50"
@@ -68,7 +72,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
             }`}
           >
             <RadioGroupItem value="50" id="amount-50" className="sr-only" />
-            $50
+            ₵50
           </Label>
           <Label
             htmlFor="amount-100"
@@ -79,7 +83,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
             }`}
           >
             <RadioGroupItem value="100" id="amount-100" className="sr-only" />
-            $100
+            ₵100
           </Label>
           <Label
             htmlFor="amount-250"
@@ -90,7 +94,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
             }`}
           >
             <RadioGroupItem value="250" id="amount-250" className="sr-only" />
-            $250
+            ₵250
           </Label>
           <Label
             htmlFor="amount-500"
@@ -101,7 +105,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
             }`}
           >
             <RadioGroupItem value="500" id="amount-500" className="sr-only" />
-            $500
+            ₵500
           </Label>
           <Label
             htmlFor="amount-custom"
@@ -111,7 +115,11 @@ export function DonationForm({ eventId }: { eventId: string }) {
                 : "border-input"
             }`}
           >
-            <RadioGroupItem value="custom" id="amount-custom" className="sr-only" />
+            <RadioGroupItem
+              value="custom"
+              id="amount-custom"
+              className="sr-only"
+            />
             Custom
           </Label>
         </RadioGroup>
@@ -121,7 +129,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
         <div className="space-y-2">
           <Label htmlFor="custom-amount">Custom Amount</Label>
           <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2">$</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2">₵</span>
             <Input
               id="custom-amount"
               type="number"
@@ -141,28 +149,28 @@ export function DonationForm({ eventId }: { eventId: string }) {
         <Switch
           id="anonymous"
           checked={isAnonymous}
-          onCheckedChange={(checked) => setIsAnonymous(checked)}
-          className="data-[state=checked]:bg-primary-600"
+          onCheckedChange={setIsAnonymous}
         />
         <Label htmlFor="anonymous" className="cursor-pointer">
           Donate anonymously
         </Label>
       </div>
-
       <Button
         type="submit"
         className="w-full"
-        disabled={!amount || (amount === "custom" && !customAmount) || isSubmitting}
+        disabled={
+          !amount || (amount === "custom" && !customAmount) || isSubmitting
+        }
         variant="gradient"
         onClick={() => {
           if (!amount || (amount === "custom" && !customAmount)) {
-            alert("Please select or enter a donation amount")
-            return
+            alert("Please select or enter a donation amount");
+            return;
           }
         }}
       >
         {isSubmitting ? "Processing..." : "Donate Now"}
       </Button>
     </form>
-  )
+  );
 }

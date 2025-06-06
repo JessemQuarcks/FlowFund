@@ -1,9 +1,7 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -12,35 +10,31 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import Link from "next/link"
 
 interface EventData {
   id: string
   title: string
   description: string
-  userId: string
-  fundraiser: {
-    id: string
-    targetAmount: number
-    raisedAmount: number
-    totalWithdrawn: number
-    image: string | null
-    endDate: Date
-    anonymity: boolean
-    minimumAmount: number
-    donorCount: number
-  } | null
-  user: {
-    name: string | null
-  }
+  category: string
+  target: number
+  raisedAmount: number
+  donorCount: number
+  endDate: string
+  minDonation: number
+  allowAnonymous: boolean
+  image: string | null
 }
 
-export default function WithdrawFundsPage({ params }: { params: { id: string } }) {
+export default function WithdrawFundsPage() {
+  const params = useParams()
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [event, setEvent] = useState<EventData | null>(null)
   const [withdrawalMethod, setWithdrawalMethod] = useState("bank")
   const [withdrawalAmount, setWithdrawalAmount] = useState("")
   const [error, setError] = useState<string | null>(null)
+  const [totalWithdrawn, setTotalWithdrawn] = useState(0) // Added since it's not in API response
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -53,7 +47,12 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
         }
         
         const eventData = await response.json()
+        console.log("API Response:", eventData)
         setEvent(eventData)
+        
+        // You might want to fetch totalWithdrawn separately if needed
+        // const withdrawalResponse = await fetch(`/api/events/${params.id}/withdrawals`)
+        // setTotalWithdrawn(withdrawalResponse.total || 0)
       } catch (error) {
         console.error('Error fetching event:', error)
         setError('Failed to load event details')
@@ -62,7 +61,9 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
       }
     }
 
-    fetchEvent()
+    if (params.id) {
+      fetchEvent()
+    }
   }, [params.id])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -70,10 +71,10 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
     setIsSubmitting(true)
     setError(null)
 
+    if (!event) return
+
     const amount = Number.parseFloat(withdrawalAmount)
-    const availableAmount = event?.fundraiser 
-      ? Number(event.fundraiser.raisedAmount) - Number(event.fundraiser.totalWithdrawn)
-      : 0
+    const availableAmount = event.raisedAmount - totalWithdrawn
 
     // Validate withdrawal amount
     if (isNaN(amount) || amount <= 0) {
@@ -89,14 +90,11 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
     }
 
     try {
-      const formData = new FormData(e.currentTarget)
-      
       const withdrawalData = {
         eventId: params.id,
-        fundraiserId: event?.fundraiser?.id,
         amount,
         accountType: withdrawalMethod === 'bank' ? 'BANK_ACCOUNT' : 'MOBILE_MONEY',
-        notes: formData.get("notes") as string || null,
+        notes: (e.currentTarget.elements.namedItem("notes") as HTMLTextAreaElement)?.value || null,
       }
 
       const response = await fetch('/api/withdrawals', {
@@ -113,18 +111,7 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
       }
 
       const result = await response.json()
-      
-      // Update the event data to reflect the new withdrawal
-      if (event?.fundraiser) {
-        setEvent({
-          ...event,
-          fundraiser: {
-            ...event.fundraiser,
-            totalWithdrawn: Number(event.fundraiser.totalWithdrawn) + amount
-          }
-        })
-      }
-
+      setTotalWithdrawn(prev => prev + amount)
       alert("Withdrawal request submitted successfully!")
       setWithdrawalAmount("")
       
@@ -137,8 +124,8 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
   }
 
   const handleMaxAmount = () => {
-    if (event?.fundraiser) {
-      const availableAmount = Number(event.fundraiser.raisedAmount) - Number(event.fundraiser.totalWithdrawn)
+    if (event) {
+      const availableAmount = event.raisedAmount - totalWithdrawn
       setWithdrawalAmount(availableAmount.toString())
     }
   }
@@ -170,34 +157,16 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
     )
   }
 
-  if (!event.fundraiser) {
-    return (
-      <div className="container py-8">
-        <Alert variant="destructive">
-          <AlertTitle>No Fundraiser</AlertTitle>
-          <AlertDescription>
-            This event does not have an associated fundraiser. Only events with active fundraisers can have fund withdrawals.
-            <Link href={`/events/${params.id}`} className="block mt-2 underline">
-              Return to event
-            </Link>
-          </AlertDescription>
-        </Alert>
-      </div>
-    )
-  }
-
-  const raisedAmount = Number(event.fundraiser.raisedAmount)
-  const withdrawnAmount = Number(event.fundraiser.totalWithdrawn)
-  const availableAmount = raisedAmount - withdrawnAmount
+  const availableAmount = event.raisedAmount - totalWithdrawn
 
   return (
     <div className="container py-8 max-w-3xl">
       <Link
-        href={`/events/${params.id}`}
+        href='/dashboard'
         className="flex items-center gap-2 text-muted-foreground mb-6 hover:text-foreground transition-colors"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>Back to Event</span>
+        <span>Back to Dashboard</span>
       </Link>
 
       <Card>
@@ -208,7 +177,7 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
             <img
-              src={event.fundraiser.image || "/placeholder.svg?height=64&width=64"}
+              src={event.image || "/placeholder.svg?height=64&width=64"}
               alt={event.title}
               className="h-16 w-16 rounded object-cover"
               width={64}
@@ -217,18 +186,17 @@ export default function WithdrawFundsPage({ params }: { params: { id: string } }
             <div>
               <h3 className="font-medium">{event.title}</h3>
               <p className="text-sm text-muted-foreground">ID: {event.id}</p>
-              <p className="text-sm text-muted-foreground">Organizer: {event.user.name || 'Anonymous'}</p>
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border p-4">
               <div className="text-sm text-muted-foreground">Total Raised</div>
-              <div className="text-2xl font-bold">${raisedAmount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">${event.raisedAmount.toLocaleString()}</div>
             </div>
             <div className="rounded-lg border p-4">
               <div className="text-sm text-muted-foreground">Previously Withdrawn</div>
-              <div className="text-2xl font-bold">${withdrawnAmount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">${totalWithdrawn.toLocaleString()}</div>
             </div>
             <div className="rounded-lg border p-4 bg-primary/5">
               <div className="text-sm text-muted-foreground">Available for Withdrawal</div>

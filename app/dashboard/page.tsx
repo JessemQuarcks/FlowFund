@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Plus } from "lucide-react";
+import { Edit, Plus, Trash2 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth"; // Adjust path as needed
@@ -153,11 +153,11 @@ export default async function DashboardPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span>
-                              $
+                              GH₵
                               {Number(
                                 event.fundraiser.raisedAmount
                               ).toLocaleString()}{" "}
-                              raised of $
+                              raised of GH₵
                               {Number(
                                 event.fundraiser.targetAmount
                               ).toLocaleString()}
@@ -199,6 +199,11 @@ export default async function DashboardPage() {
                         className="border-primary-200 hover:bg-primary-50 hover:text-primary-700"
                       >
                         <Edit className="mr-2 h-4 w-4" /> Edit
+                      </Button>
+                    </Link>
+                    <Link href={`/events/${event.id}/withdraw`}>
+                      <Button size="sm" variant="gradient-secondary">
+                        Withdraw Funds
                       </Button>
                     </Link>
                     {event.fundraiser &&
