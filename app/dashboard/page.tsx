@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Edit, Plus } from "lucide-react"
+import { Edit, Plus, Trash2 } from "lucide-react"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/lib/auth" // Adjust path as needed
@@ -164,13 +164,11 @@ export default async function DashboardPage() {
                         <Edit className="mr-2 h-4 w-4" /> Edit
                       </Button>
                     </Link>
-                    {event.fundraiser && Number(event.fundraiser.raisedAmount) > Number(event.fundraiser.totalWithdrawn) && (
                       <Link href={`/events/${event.id}/withdraw`}>
                         <Button size="sm" variant="gradient-secondary">
                           Withdraw Funds
                         </Button>
                       </Link>
-                    )}
                   </CardFooter>
                 </Card>
               ))}

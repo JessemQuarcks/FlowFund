@@ -174,7 +174,7 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
 
       <Card>
         <CardHeader>
-          <CardTitle>Edit Fundraising Event</CardTitle>
+          <CardTitle className="green-text-gradient">Edit Event</CardTitle>
           <CardDescription>Update your fundraising event details</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -188,24 +188,35 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
 
             <div className="space-y-2">
               <Label htmlFor="title">Event Title</Label>
-              <Input id="title" name="title" defaultValue={event.title} required />
+              <Input 
+              id="title" 
+              name="title" 
+              defaultValue={event.title} 
+              required />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Short Description</Label>
+              <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
                 name="description"
                 defaultValue={event.description}
-                placeholder="A brief summary of your fundraiser (shown in listings)"
+                placeholder="Describe your event and why people should donate"
+                className="min-h-32"
                 required
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="target">Target Amount ($)</Label>
-                <Input id="target" name="target" type="number" min="1" step="1" defaultValue={event.target} required />
+            <div className="space-y-2">
+                <Label htmlFor="date">Event Date</Label>
+                <Input
+                  id="date"
+                  name="eventdate"
+                  type="datetime-local"
+                  defaultValue={event.date}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
@@ -225,41 +236,6 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
-              <Input id="endDate" name="endDate" type="date" defaultValue={event.endDate} required />
-            </div>
-
-            <div className="space-y-2">
-              <Label>Donation Range (Optional)</Label>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label htmlFor="minDonation" className="text-xs text-muted-foreground">
-                    Minimum ($)
-                  </Label>
-                  <Input
-                    id="minDonation"
-                    name="minDonation"
-                    type="number"
-                    min="1"
-                    step="1"
-                    defaultValue={event.minDonation}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="allowAnonymous"
-                name="allowAnonymous"
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                defaultChecked={event.allowAnonymous}
-              />
-              <Label htmlFor="allowAnonymous">Allow anonymous donations</Label>
             </div>
 
             <div className="space-y-2">
@@ -315,6 +291,56 @@ export default function EditEventPage({ params }: { params:Promise<{ id: string 
                 </p>
               )}
             </div>
+
+            <h3 className="text-xl font-semibold">Edit Fundraiser Details</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="target">Target Amount (GH₵)</Label>
+                <Input id="target" name="target" type="number" min="1" step="1" defaultValue={event.target} required />
+              </div>
+            <div className="space-y-2">
+              <Label htmlFor="endDate">Fundraiser End Date</Label>
+              <Input
+                id="endDate"
+                name="endDate"
+                type="date"
+                defaultValue={event.endDate}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Donation Range (Optional)</Label>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="minDonation" className="text-xs text-muted-foreground">
+                    Minimum (₵)
+                  </Label>
+                  <Input
+                    id="minDonation"
+                    name="minDonation"
+                    type="number"
+                    min="1"
+                    step="1"
+                    defaultValue={event.minDonation}
+                  />
+                </div>
+              </div>
+            </div>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="allowAnonymous"
+                name="allowAnonymous"
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                defaultChecked={event.allowAnonymous}
+              />
+              <Label htmlFor="allowAnonymous">Allow anonymous donations</Label>
+            </div>
+
+            
           </CardContent>
           <CardFooter className="flex justify-between">
             <Button variant="outline" type="button" asChild>

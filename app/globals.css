@@ -140,10 +140,10 @@ button:not(:disabled),
 }
 
 /* Fix for checkboxes */
-input[type="checkbox"] {
+/* input[type="checkbox"] {
   cursor: pointer !important;
   opacity: 1 !important;
-}
+} */
 
 /* Fix for links */
 a {
