@@ -11,7 +11,7 @@ export const createEventSchema = zfd.formData({
       z
         .string()
         .pipe(
-          z.coerce.date().min(new Date(), "Event date cannot be in the apast")
+          z.coerce.date().min(new Date(), "Event date cannot be in the past")
         )
     ),
     image: zfd.file(z.instanceof(File).optional()),
