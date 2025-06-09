@@ -192,15 +192,21 @@ export default function WithdrawFundsPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border p-4">
               <div className="text-sm text-muted-foreground">Total Raised</div>
-              <div className="text-2xl font-bold">${event.raisedAmount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                ${event?.raisedAmount?.toLocaleString() ?? '0'}
+              </div>
             </div>
             <div className="rounded-lg border p-4">
               <div className="text-sm text-muted-foreground">Previously Withdrawn</div>
-              <div className="text-2xl font-bold">${totalWithdrawn.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                ${totalWithdrawn?.toLocaleString() ?? '0'}
+              </div>
             </div>
             <div className="rounded-lg border p-4 bg-primary/5">
               <div className="text-sm text-muted-foreground">Available for Withdrawal</div>
-              <div className="text-2xl font-bold">${availableAmount.toLocaleString()}</div>
+              <div className="text-2xl font-bold">
+                ${(event?.raisedAmount ? event.raisedAmount - (totalWithdrawn ?? 0) : 0).toLocaleString()}
+              </div>
             </div>
           </div>
 
@@ -230,10 +236,11 @@ export default function WithdrawFundsPage() {
                     id="amount"
                     type="number"
                     min="1"
-                    step="0.01"
-                    max={availableAmount}
                     value={withdrawalAmount}
                     onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    max={String(availableAmount)} // Cast to string here
+                    step="0.01"
+                    placeholder="Enter amount to withdraw"
                     required
                     className="pr-20"
                   />

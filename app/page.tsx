@@ -1,10 +1,18 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { MoveRight, TrendingUp, Users } from "lucide-react"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { MoveRight, TrendingUp, Users } from "lucide-react";
 import { prisma } from "@/lib/prisma";
-import { ThemeToggle } from "@/components/theme-toggle"
+import { EventWithDaysLeft } from "@/types";
+// import { EventWithDaysLeft } from "@/types";
 
 export default async function Home() {
   // Await the database query to get the actual array
@@ -14,6 +22,19 @@ export default async function Home() {
     },
   });
 
+  const events: EventWithDaysLeft[] = featuredEvents.map((e) => ({
+    ...e,
+    daysLeft: e.fundraiser?.endDate
+      ? Math.max(
+          0,
+          Math.ceil(
+            (new Date(e.fundraiser.endDate).getTime() - Date.now()) /
+              (1000 * 60 * 60 * 24)
+          )
+        )
+      : 0,
+  }));
+
   return (
     <div className="flex min-h-screen flex-col">
       <main className="flex-1">
@@ -22,11 +43,12 @@ export default async function Home() {
             <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
               <div className="space-y-4">
                 <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                  <span className="green-text-gradient">Raise funds</span> for what matters to you
+                  <span className="green-text-gradient">Raise funds</span> for
+                  what matters to you
                 </h1>
                 <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                  Create fundraising events, set targets, and track donations in real-time. Make a difference with
-                  FundFlow.
+                  Create fundraising events, set targets, and track donations in
+                  real-time. Make a difference with FundFlow.
                 </p>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Link href="/events/create">
@@ -59,15 +81,17 @@ export default async function Home() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  <span className="green-text-gradient">Featured</span> Fundraisers
+                  <span className="green-text-gradient">Featured</span>{" "}
+                  Fundraisers
                 </h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Discover events that are making a difference in communities around the world.
+                  Discover events that are making a difference in communities
+                  around the world.
                 </p>
               </div>
             </div>
             <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3">
-              {featuredEvents.map((event) => (
+              {events.map((event) => (
                 <Card key={event.id} className="overflow-hidden">
                   <img
                     src={event.fundraiser?.image || "/placeholder.svg"}
@@ -85,27 +109,40 @@ export default async function Home() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span>
-                            ${event.fundraiser?.raisedAmount.toLocaleString()} raised of ${event.fundraiser?.targetAmount.toLocaleString()}
+                            ${event.fundraiser?.raisedAmount.toLocaleString()}{" "}
+                            raised of $
+                            {event.fundraiser?.targetAmount.toLocaleString()}
                           </span>
                           <span className="font-medium text-primary-600">
-                            {event.fundraiser ? Math.round((Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100) : 0}%
+                            {event.fundraiser
+                              ? Math.round(
+                                  (Number(event.fundraiser.raisedAmount) /
+                                    Number(event.fundraiser.targetAmount)) *
+                                    100
+                                )
+                              : 0}
+                            %
                           </span>
                         </div>
-                        <Progress 
-                          value={event.fundraiser ? (Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100 : 0} 
-                          className="h-2" 
+                        <Progress
+                          value={
+                            event.fundraiser
+                              ? (Number(event.fundraiser.raisedAmount) /
+                                  Number(event.fundraiser.targetAmount)) *
+                                100
+                              : 0
+                          }
+                          className="h-2"
                         />
                       </div>
                       <div className="flex justify-between text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Users className="h-4 w-4" />
-                          <span>{event.fundraiser?.donorCount || 0} donors</span>
+                          <span>
+                            {event.fundraiser?.donorCount || 0} donors
+                          </span>
                         </div>
-                        <div>
-                          {event.fundraiser?.endDate 
-                            ? Math.max(0, Math.ceil((new Date(event.fundraiser.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))) 
-                            : 0} days left
-                        </div>
+                        <div>{`${event.daysLeft} days left`}</div>
                       </div>
                     </div>
                   </CardContent>
@@ -145,10 +182,12 @@ export default async function Home() {
               <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                    How <span className="green-text-gradient">FundFlow</span> Works
+                    How <span className="green-text-gradient">FundFlow</span>{" "}
+                    Works
                   </h2>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Our platform makes fundraising simple, transparent, and effective.
+                    Our platform makes fundraising simple, transparent, and
+                    effective.
                   </p>
                 </div>
                 <ul className="grid gap-6">
@@ -159,7 +198,8 @@ export default async function Home() {
                     <div className="space-y-1">
                       <h3 className="text-xl font-bold">Create Your Event</h3>
                       <p className="text-muted-foreground">
-                        Set up your fundraising event with details, target amount, and a compelling story.
+                        Set up your fundraising event with details, target
+                        amount, and a compelling story.
                       </p>
                     </div>
                   </li>
@@ -168,9 +208,12 @@ export default async function Home() {
                       2
                     </div>
                     <div className="space-y-1">
-                      <h3 className="text-xl font-bold">Share With Your Network</h3>
+                      <h3 className="text-xl font-bold">
+                        Share With Your Network
+                      </h3>
                       <p className="text-muted-foreground">
-                        Spread the word about your cause through social media and direct sharing.
+                        Spread the word about your cause through social media
+                        and direct sharing.
                       </p>
                     </div>
                   </li>
@@ -181,7 +224,8 @@ export default async function Home() {
                     <div className="space-y-1">
                       <h3 className="text-xl font-bold">Collect Donations</h3>
                       <p className="text-muted-foreground">
-                        Receive funds securely with options for anonymous or visible donor recognition.
+                        Receive funds securely with options for anonymous or
+                        visible donor recognition.
                       </p>
                     </div>
                   </li>
@@ -192,7 +236,8 @@ export default async function Home() {
                     <div className="space-y-1">
                       <h3 className="text-xl font-bold">Withdraw Funds</h3>
                       <p className="text-muted-foreground">
-                        Access your raised funds easily when you need them for your event or cause.
+                        Access your raised funds easily when you need them for
+                        your event or cause.
                       </p>
                     </div>
                   </li>
@@ -206,19 +251,30 @@ export default async function Home() {
         <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary-600" />
-            <span className="text-xl font-bold green-text-gradient">FundFlow</span>
+            <span className="text-xl font-bold green-text-gradient">
+              FundFlow
+            </span>
           </div>
           <p className="text-center text-sm text-muted-foreground md:text-left">
             © {new Date().getFullYear()} FundFlow. All rights reserved.
           </p>
           <div className="flex gap-4">
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary-600 hover:underline">
+            <Link
+              href="/terms"
+              className="text-sm text-muted-foreground hover:text-primary-600 hover:underline"
+            >
               Terms
             </Link>
-            <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary-600 hover:underline">
+            <Link
+              href="/privacy"
+              className="text-sm text-muted-foreground hover:text-primary-600 hover:underline"
+            >
               Privacy
             </Link>
-            <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary-600 hover:underline">
+            <Link
+              href="/contact"
+              className="text-sm text-muted-foreground hover:text-primary-600 hover:underline"
+            >
               Contact
             </Link>
           </div>

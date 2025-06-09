@@ -6,4 +6,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET!,
 });
 
-export { cloudinary };
+function extractPublicId(url: string): string {
+  const parts = url.split("/");
+  const filename = parts[parts.length - 1];
+  return `event-images/${filename.split(".")[0]}`;
+}
+
+export { cloudinary, extractPublicId };

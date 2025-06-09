@@ -289,15 +289,12 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
             </CardContent>
           </Card>
 
-          <Card className="gradient-card">
+          {/* <Card className="gradient-card">
             <CardHeader>
               <CardTitle>Recent Donors</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* This section still uses hardcoded donor data. 
-                  You would need to fetch actual donation data for this event from your database
-                  and render it dynamically, potentially using a similar pattern to DonorsList.
-              */}
+             
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -349,7 +346,7 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
                 </Link>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
     </div>
