@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle } from "lucide-react"
 
-export default function DonationSuccessPage({
+export default  async function DonationSuccessPage({
   searchParams,
 }: {
   searchParams: {
@@ -12,9 +12,10 @@ export default function DonationSuccessPage({
     eventTitle?: string
   }
 }) {
-  const amount = searchParams.amount || "0"
-  const eventId = searchParams.eventId || "1"
-  const eventTitle = searchParams.eventTitle || "this fundraiser"
+  const params = await searchParams
+  const amount = params.amount || "0"
+  const eventId = params.eventId || "1"
+  const eventTitle = params.eventTitle || "this fundraiser"
 
   return (
     <div className="container py-12 flex items-center justify-center">
