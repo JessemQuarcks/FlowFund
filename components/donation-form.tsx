@@ -314,7 +314,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
 
   const isAmountValid =
     amount && (amount !== "custom" || (amount === "custom" && customAmount && Number.parseFloat(customAmount) > 0))
-  const isDonorInfoValid = isAnonymous || (donorInfo.firstName && donorInfo.lastName && donorInfo.email)
+  // const isDonorInfoValid = isAnonymous || (donorInfo.firstName && donorInfo.lastName && donorInfo.email)
   const isPaymentValid =
     (paymentMethod === "bank" && paymentDetails.bankCode && paymentDetails.accountNumber) ||
     (paymentMethod === "mobile_money" && paymentDetails.mobileNetwork && paymentDetails.mobileNumber)
@@ -328,9 +328,9 @@ export function DonationForm({ eventId }: { eventId: string }) {
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="amount">Amount & Info</TabsTrigger>
+            <TabsTrigger value="amount">Amount</TabsTrigger>
             <TabsTrigger value="payment" disabled={!isAmountValid}>
-              Payment Details
+              Details
             </TabsTrigger>
           </TabsList>
 
@@ -413,7 +413,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
               <Label className="cursor-pointer m-0">Donate anonymously</Label>
             </div>
 
-            {!isAnonymous && (
+            {/* {!isAnonymous && (
               <div className="space-y-4">
                 <Label className="text-base font-medium">Donor Information</Label>
                 <div className="grid grid-cols-2 gap-4">
@@ -454,13 +454,13 @@ export function DonationForm({ eventId }: { eventId: string }) {
                   <Input id="phone" name="phone" type="tel" value={donorInfo.phone} onChange={handleDonorInfoChange} />
                 </div>
               </div>
-            )}
+            )} */}
 
             <div className="flex justify-end">
               <Button
                 type="button"
                 onClick={handleNextStep}
-                disabled={!isAmountValid || !isDonorInfoValid}
+                disabled={!isAmountValid}
                 className="flex items-center gap-2"
               >
                 Next: Payment <ArrowRight className="h-4 w-4" />
@@ -501,7 +501,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
                   <Label htmlFor="mobileNetwork">Mobile Network *</Label>
                   <Select value={paymentDetails.mobileNetwork} onValueChange={handleNetworkChange}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Choose your network" />
+                      <SelectValue placeholder="Select network" />
                     </SelectTrigger>
                     <SelectContent>
                       {mobileNetworks.map((network) => (
@@ -560,23 +560,7 @@ export function DonationForm({ eventId }: { eventId: string }) {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="rounded-lg bg-primary-50 dark:bg-primary-900/30 p-4">
-                <h3 className="font-medium text-primary-700 dark:text-primary-300 mb-2">Donation Summary</h3>
-                <div className="text-sm space-y-1">
-                  <div className="flex justify-between">
-                    <span>Amount:</span>
-                    <span className="font-medium">${amount === "custom" ? customAmount : amount}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Processing Fee:</span>
-                    <span className="text-muted-foreground">Covered by FundFlow</span>
-                  </div>
-                  <div className="flex justify-between font-medium border-t pt-1">
-                    <span>Total:</span>
-                    <span>${amount === "custom" ? customAmount : amount}</span>
-                  </div>
-                </div>
-              </div>
+              
 
               <div className="flex justify-between">
                 <Button type="button" variant="outline" onClick={() => setActiveTab("amount")}>
