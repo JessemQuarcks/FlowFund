@@ -40,7 +40,6 @@ export default function WithdrawFundsPage() {
         }
 
         const eventData = await response.json();
-        console.log("API Response:", eventData);
         setEvent(eventData);
 
         // You might want to fetch totalWithdrawn separately if needed

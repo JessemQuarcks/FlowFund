@@ -35,8 +35,6 @@ export default function CreateEventPage() {
 
     const formData = new FormData(e.currentTarget);
 
-    console.log(formData)
-
     try {
       const response = await fetch("/api/events", {
         method: "POST",
@@ -44,7 +42,7 @@ export default function CreateEventPage() {
       });
 
       if (!response.ok) {
-        console.log(response)
+        console.error(response);
         throw new Error("Failed to create event");
       }
 
