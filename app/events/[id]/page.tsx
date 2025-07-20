@@ -14,16 +14,31 @@ import { DonationForm } from "@/components/donation-form";
 import { DonorsList } from "@/components/donors-list";
 import { prisma } from "@/lib/prisma"; // Import prisma client
 
-export default async function EventPage({ params }: { params:Promise<{ id: string }> }) {
-   // No need to await params, it's already available
-   const {id}= await params;
+export default async function EventPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  // No need to await params, it's already available
+  const { id } = await params;
   // Fetch the event and its associated fundraiser from the database
   const event = await prisma.event.findUnique({
     where: {
       id: id,
     },
     include: {
-      fundraiser: true, // Include the related fundraiser data
+      fundraiser: {
+        omit: {
+          dateAdded: true,
+          dateUpdated: true,
+        },
+      }, // Include the related fundraiser data
+      user: {
+        omit: {
+          dateAdded: true,
+          dateUpdated: true,
+        },
+      },
     },
   });
 
@@ -44,7 +59,11 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
 
   // Calculate progress and days left dynamically
   const progress = event.fundraiser
-    ? Math.round((Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100)
+    ? Math.round(
+        (Number(event.fundraiser.raisedAmount) /
+          Number(event.fundraiser.targetAmount)) *
+          100
+      )
     : 0;
 
   const daysLeft = event.fundraiser?.endDate
@@ -173,7 +192,7 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Target</span>
                       <span className="font-medium">
-                        $
+                        GH₵
                         {event.fundraiser?.targetAmount.toLocaleString() ||
                           "N/A"}
                       </span>
@@ -181,7 +200,7 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Raised</span>
                       <span className="font-medium text-primary-600">
-                        $
+                        GH₵
                         {event.fundraiser?.raisedAmount.toLocaleString() ||
                           "N/A"}
                       </span>
@@ -265,8 +284,8 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span>
-                    ${event.fundraiser?.raisedAmount.toLocaleString() || 0}{" "}
-                    raised of $
+                    ₵{event.fundraiser?.raisedAmount.toLocaleString() || 0}{" "}
+                    raised of ₵
                     {event.fundraiser?.targetAmount.toLocaleString() || 0}
                   </span>
                   <span className="font-medium text-primary-600">
@@ -285,19 +304,16 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
                   <span>{daysLeft} days left</span>
                 </div>
               </div>
-              <DonationForm eventId={event.id} />
+              <DonationForm event={event} />
             </CardContent>
           </Card>
 
-          <Card className="gradient-card">
+          {/* <Card className="gradient-card">
             <CardHeader>
               <CardTitle>Recent Donors</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* This section still uses hardcoded donor data. 
-                  You would need to fetch actual donation data for this event from your database
-                  and render it dynamically, potentially using a similar pattern to DonorsList.
-              */}
+             
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -349,7 +365,7 @@ export default async function EventPage({ params }: { params:Promise<{ id: strin
                 </Link>
               </div>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
       </div>
     </div>
