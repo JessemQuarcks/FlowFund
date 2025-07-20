@@ -53,7 +53,7 @@ export default async function DashboardPage() {
   // Fetch user's donations
   const donations = await prisma.donation.findMany({
     where: {
-      userId: session.user.id,
+      donorEmail: session.user.email,
     },
     include: {
       fundraiser: {
