@@ -15,7 +15,35 @@ export type EventWithFundraiser = Prisma.EventGetPayload<{
   };
 }>;
 
+export type EventWithFundraiserAndUser = Prisma.EventGetPayload<{
+  include: {
+    fundraiser: {
+      omit: {
+        dateAdded: true;
+        dateUpdated: true;
+      };
+    };
+    user: {
+      omit: {
+        dateAdded: true;
+        dateUpdated: true;
+      };
+    };
+  };
+  omit: {
+    dateAdded: true;
+    dateUpdated: true;
+  };
+}>;
+
 export type EventWithDaysLeft = Event & {
   fundraiser: Fundraiser | null;
   daysLeft: Number;
 };
+
+export type DonorInfo = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+} | null;

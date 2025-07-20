@@ -44,7 +44,7 @@ model Session {
 model User {
   id            String    @id @default(uuid())
   name          String?
-  email         String?   @unique
+  email         String   @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
@@ -54,7 +54,6 @@ model User {
   dateUpdated DateTime @updatedAt
 
   events Event[]
-  donations Donation[]
   withdrawals Withdrawal[]
 }
 
@@ -95,14 +94,14 @@ model Fundraiser {
   id String @id @default(uuid())
   eventId String @unique
   event Event @relation(fields: [eventId], references: [id])
-  targetAmount Decimal
+  targetAmount Float
   endDate DateTime
   anonymity Boolean
-  minimumAmount Decimal
+  minimumAmount Float
   image String?
-  raisedAmount Decimal
+  raisedAmount Float
   donorCount Int
-  totalWithdrawn Decimal
+  totalWithdrawn Float
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
 
@@ -112,11 +111,12 @@ model Fundraiser {
 
 model Donation {
   id String @id @default(uuid())
-  amount Decimal
+  amount Float
   fundraiserId String
   fundraiser Fundraiser @relation(fields: [fundraiserId], references: [id])
-  userId String?
-  user User? @relation(fields: [userId], references: [id])
+  donorFirstName String?
+  donorLastName String?
+  donorEmail String?
   paymentDetails Json
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
@@ -124,7 +124,7 @@ model Donation {
 
 model Withdrawal {
   id String @id @default(uuid())
-  amount Decimal
+  amount Float
   fundraiserId String
   fundraiser Fundraiser @relation(fields: [fundraiserId], references: [id])
   userId String
