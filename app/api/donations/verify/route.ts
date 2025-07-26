@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/lib/auth";
 import { DonorInfo } from "@/types";
 
 export async function POST(request: Request) {
@@ -41,6 +39,14 @@ export async function POST(request: Request) {
         },
       });
 
+      const donationByUserCount = donorInfo?.email
+        ? await prisma.donation.count({
+            where: {
+              donorEmail: donorInfo?.email,
+            },
+          })
+        : 0;
+
       // Update fundraiser total
       await prisma.fundraiser.update({
         where: {
@@ -49,6 +55,9 @@ export async function POST(request: Request) {
         data: {
           raisedAmount: {
             increment: amount / 100,
+          },
+          donorCount: {
+            increment: donationByUserCount <= 1 ? 1 : 0,
           },
         },
       });

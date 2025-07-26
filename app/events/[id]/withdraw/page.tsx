@@ -18,16 +18,172 @@ import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { EventWithFundraiser } from "@/types";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function WithdrawFundsPage() {
   const params = useParams();
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [event, setEvent] = useState<EventWithFundraiser | null>(null);
-  const [withdrawalMethod, setWithdrawalMethod] = useState("bank");
+  const [withdrawalMethod, setWithdrawalMethod] = useState<
+    "bank" | "mobile_money"
+  >("bank");
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [totalWithdrawn, setTotalWithdrawn] = useState(0); // Added since it's not in API response
+  const [paymentDetails, setPaymentDetails] = useState({
+    // Bank details
+    bankCode: "",
+    accountNumber: "",
+    accountHolderName: "",
+
+    // Mobile money details
+    mobileNetwork: "",
+    mobileNumber: "",
+  });
+
+  const banks = [
+    {
+      name: "Absa Bank Ghana Ltd",
+      code: "030100",
+    },
+    {
+      name: "Access Bank",
+      code: "280100",
+    },
+    {
+      name: "ADB Bank Limited",
+      code: "080100",
+    },
+    {
+      name: "Affinity Ghana Savings and Loans",
+      code: "300341",
+    },
+    {
+      name: "ARB Apex Bank",
+      code: "070101",
+    },
+    {
+      name: "Bank of Africa Ghana",
+      code: "210100",
+    },
+    {
+      name: "Best Point Savings & Loans",
+      code: "300335",
+    },
+    {
+      name: "CAL Bank Limited",
+      code: "140100",
+    },
+    {
+      name: "Consolidated Bank Ghana Limited",
+      code: "340100",
+    },
+    {
+      name: "Ecobank Ghana Limited",
+      code: "130100",
+    },
+    {
+      name: "FBNBank Ghana Limited",
+      code: "200100",
+    },
+    {
+      name: "Fidelity Bank Ghana Limited",
+      code: "240100",
+    },
+    {
+      name: "First Atlantic Bank Limited",
+      code: "170100",
+    },
+    {
+      name: "First National Bank Ghana Limited",
+      code: "330100",
+    },
+    {
+      name: "GCB Bank Limited",
+      code: "040100",
+    },
+    {
+      name: "Guaranty Trust Bank (Ghana) Limited",
+      code: "230100",
+    },
+    {
+      name: "National Investment Bank Limited",
+      code: "050100",
+    },
+    {
+      name: "OmniBSCI Bank",
+      code: "360100",
+    },
+    {
+      name: "Prudential Bank Limited",
+      code: "180100",
+    },
+    {
+      name: "Republic Bank (GH) Limited",
+      code: "110100",
+    },
+    {
+      name: "Services Integrity Savings and Loans",
+      code: "300361",
+    },
+    {
+      name: "Société Générale Ghana Limited",
+      code: "090100",
+    },
+    {
+      name: "Stanbic Bank Ghana Limited",
+      code: "190100",
+    },
+    {
+      name: "Standard Chartered Bank Ghana Limited",
+      code: "020100",
+    },
+    {
+      name: "United Bank for Africa Ghana Limited",
+      code: "060100",
+    },
+    {
+      name: "Universal Merchant Bank Ghana Limited",
+      code: "100100",
+    },
+    {
+      name: "Zenith Bank Ghana",
+      code: "120100",
+    },
+  ];
+
+  const mobileNetworks = [
+    { name: "AT Money", code: "ATL" },
+    { name: "MTN Mobile Money", code: "MTN" },
+    { name: "Vodafone Cash", code: "VOD" },
+  ];
+
+  const handlePaymentDetailsChange = (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const { name, value } = e.target;
+    setPaymentDetails((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleAccountSelectionChange = (
+    type: "bankCode" | "mobileNetwork",
+    value: string
+  ) => {
+    setPaymentDetails((prev) => ({
+      ...prev,
+      [type]: value,
+    }));
+  };
 
   useEffect(() => {
     const fetchEvent = async () => {
@@ -40,11 +196,7 @@ export default function WithdrawFundsPage() {
         }
 
         const eventData = await response.json();
-        setEvent(eventData);
-
-        // You might want to fetch totalWithdrawn separately if needed
-        // const withdrawalResponse = await fetch(`/api/events/${params.id}/withdrawals`)
-        // setTotalWithdrawn(withdrawalResponse.total || 0)
+        setEvent(eventData.data);
       } catch (error) {
         console.error("Error fetching event:", error);
         setError("Failed to load event details");
@@ -67,7 +219,8 @@ export default function WithdrawFundsPage() {
 
     const amount = Number.parseFloat(withdrawalAmount);
     const availableAmount =
-      Number(event.fundraiser?.raisedAmount) - totalWithdrawn;
+      Number(event.fundraiser?.raisedAmount) -
+      (event?.fundraiser?.totalWithdrawn ?? 0);
 
     // Validate withdrawal amount
     if (isNaN(amount) || amount <= 0) {
@@ -84,15 +237,33 @@ export default function WithdrawFundsPage() {
       return;
     }
 
+    if (
+      !paymentDetails.accountHolderName ||
+      (withdrawalMethod === "bank" &&
+        (!paymentDetails.bankCode || !paymentDetails.accountNumber)) ||
+      (withdrawalMethod === "mobile_money" && !paymentDetails.mobileNumber)
+    ) {
+      setError("Please fill all required fields");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const withdrawalData = {
         eventId: params.id,
         amount,
         accountType:
           withdrawalMethod === "bank" ? "BANK_ACCOUNT" : "MOBILE_MONEY",
-        notes:
-          (e.currentTarget.elements.namedItem("notes") as HTMLTextAreaElement)
-            ?.value || null,
+        accountNumber:
+          withdrawalMethod === "bank"
+            ? paymentDetails.accountNumber
+            : paymentDetails.mobileNumber,
+        bankCode:
+          withdrawalMethod === "bank"
+            ? paymentDetails.bankCode
+            : paymentDetails.mobileNetwork,
+        accountHolderName: paymentDetails.accountHolderName,
+        notes,
       };
 
       const response = await fetch("/api/withdrawals", {
@@ -111,9 +282,18 @@ export default function WithdrawFundsPage() {
       }
 
       const result = await response.json();
-      setTotalWithdrawn((prev) => prev + amount);
+      setEvent(result.data);
+
       alert("Withdrawal request submitted successfully!");
       setWithdrawalAmount("");
+      setPaymentDetails({
+        bankCode: "",
+        accountNumber: "",
+        accountHolderName: "",
+        mobileNetwork: "",
+        mobileNumber: "",
+      });
+      setNotes("");
     } catch (error) {
       console.error("Withdrawal error:", error);
       setError(
@@ -129,7 +309,8 @@ export default function WithdrawFundsPage() {
   const handleMaxAmount = () => {
     if (event) {
       const availableAmount =
-        Number(event.fundraiser?.raisedAmount) - totalWithdrawn;
+        Number(event.fundraiser?.raisedAmount) -
+        (event?.fundraiser?.totalWithdrawn ?? 0);
       setWithdrawalAmount(availableAmount.toString());
     }
   };
@@ -163,7 +344,8 @@ export default function WithdrawFundsPage() {
   }
 
   const availableAmount =
-    Number(event.fundraiser?.raisedAmount || 0) - totalWithdrawn;
+    Number(event.fundraiser?.raisedAmount || 0) -
+    (event?.fundraiser?.totalWithdrawn ?? 0);
 
   return (
     <div className="container py-8 max-w-3xl">
@@ -211,7 +393,7 @@ export default function WithdrawFundsPage() {
                 Previously Withdrawn
               </div>
               <div className="text-2xl font-bold">
-                GH₵ {totalWithdrawn?.toLocaleString() ?? "0"}
+                GH₵ {event?.fundraiser?.totalWithdrawn?.toLocaleString() ?? "0"}
               </div>
             </div>
             <div className="rounded-lg border p-4 bg-primary/5">
@@ -245,7 +427,7 @@ export default function WithdrawFundsPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="amount">Withdrawal Amount ($)</Label>
+                <Label htmlFor="amount">Withdrawal Amount (GH₵)</Label>
                 <div className="relative">
                   <Input
                     id="amount"
@@ -278,7 +460,9 @@ export default function WithdrawFundsPage() {
                 <Label>Withdrawal Method</Label>
                 <RadioGroup
                   value={withdrawalMethod}
-                  onValueChange={setWithdrawalMethod}
+                  onValueChange={(val) =>
+                    setWithdrawalMethod(val as "bank" | "mobile_money")
+                  }
                   className="space-y-3"
                 >
                   <div className="flex items-center space-x-3 rounded-md border p-3">
@@ -294,8 +478,11 @@ export default function WithdrawFundsPage() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-3 rounded-md border p-3">
-                    <RadioGroupItem value="mobile" id="mobile" />
-                    <Label htmlFor="mobile" className="flex-1 cursor-pointer">
+                    <RadioGroupItem value="mobile_money" id="mobile_money" />
+                    <Label
+                      htmlFor="mobile_money"
+                      className="flex-1 cursor-pointer"
+                    >
                       <div className="font-medium">Mobile Money</div>
                       <div className="text-xs text-muted-foreground">
                         Mobile wallet transfer
@@ -305,7 +492,90 @@ export default function WithdrawFundsPage() {
                   </div>
                 </RadioGroup>
               </div>
-
+              <div className="space-y-4 border rounded-md p-4 bg-primary-50/30 dark:bg-primary-900/10">
+                {withdrawalMethod === "bank" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="bankCode">Select Your Bank *</Label>
+                      <Select
+                        value={paymentDetails.bankCode}
+                        onValueChange={(val) =>
+                          handleAccountSelectionChange("bankCode", val)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choose your bank" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {banks.map((bank) => (
+                            <SelectItem key={bank.code} value={bank.code}>
+                              {bank.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountNumber">Account Number *</Label>
+                      <Input
+                        id="accountNumber"
+                        name="accountNumber"
+                        placeholder="Enter your account number"
+                        value={paymentDetails.accountNumber}
+                        onChange={handlePaymentDetailsChange}
+                      />
+                    </div>
+                  </>
+                )}
+                {withdrawalMethod === "mobile_money" && (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="mobileNetwork">Mobile Network *</Label>
+                      <Select
+                        value={paymentDetails.mobileNetwork}
+                        onValueChange={(val) =>
+                          handleAccountSelectionChange("mobileNetwork", val)
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select network" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {mobileNetworks.map((network) => (
+                            <SelectItem key={network.code} value={network.code}>
+                              {network.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="mobileNumber">Mobile Number *</Label>
+                      <Input
+                        id="mobileNumber"
+                        name="mobileNumber"
+                        placeholder="e.g. 0501324249"
+                        value={paymentDetails.mobileNumber}
+                        onChange={handlePaymentDetailsChange}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Enter the mobile number registered with your mobile
+                        money account
+                      </p>
+                    </div>
+                  </>
+                )}
+                <div className="space-y-2">
+                  <Label>Account Holder Name *</Label>
+                  <Input
+                    id="accountHolderName"
+                    name="accountHolderName"
+                    placeholder="Name on your account"
+                    value={paymentDetails.accountHolderName}
+                    onChange={handlePaymentDetailsChange}
+                  />
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="notes">Notes (Optional)</Label>
                 <Textarea
@@ -313,6 +583,8 @@ export default function WithdrawFundsPage() {
                   name="notes"
                   placeholder="Add any notes about this withdrawal"
                   className="min-h-20"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                 />
               </div>
 

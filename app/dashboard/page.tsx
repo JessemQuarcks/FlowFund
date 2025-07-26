@@ -201,11 +201,6 @@ export default async function DashboardPage() {
                         <Edit className="mr-2 h-4 w-4" /> Edit
                       </Button>
                     </Link>
-                    <Link href={`/events/${event.id}/withdraw`}>
-                      <Button size="sm" variant="gradient-secondary">
-                        Withdraw Funds
-                      </Button>
-                    </Link>
                     {event.fundraiser &&
                       Number(event.fundraiser.raisedAmount) >
                         Number(event.fundraiser.totalWithdrawn) && (
