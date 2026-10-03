@@ -23,10 +23,11 @@ export type EventWithFundraiserAndUser = Prisma.EventGetPayload<{
         dateUpdated: true;
       };
     };
+    // Only public fields: this type is passed to client components.
     user: {
-      omit: {
-        dateAdded: true;
-        dateUpdated: true;
+      select: {
+        id: true;
+        name: true;
       };
     };
   };

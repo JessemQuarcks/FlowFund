@@ -33,10 +33,11 @@ export default async function EventPage({
           dateUpdated: true,
         },
       }, // Include the related fundraiser data
+      // Only public fields: `event` is passed to the client DonationForm.
       user: {
-        omit: {
-          dateAdded: true,
-          dateUpdated: true,
+        select: {
+          id: true,
+          name: true,
         },
       },
     },
