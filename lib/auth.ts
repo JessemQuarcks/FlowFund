@@ -4,6 +4,7 @@ import prisma from "@/lib/prisma";
 import GoogleProvider from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcrypt";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import {
   GetServerSidePropsContext,
   NextApiRequest,
@@ -25,13 +26,25 @@ export const authOptions: AuthOptions = {
           type: "password",
         },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Missing email or password");
         }
 
+        const email = credentials.email.trim();
+        const ip = getClientIp(req?.headers);
+        const byIp = rateLimit(`signin:ip:${ip}`, 20, 15 * 60 * 1000);
+        const byEmail = rateLimit(
+          `signin:email:${email.toLowerCase()}`,
+          10,
+          15 * 60 * 1000
+        );
+        if (!byIp.success || !byEmail.success) {
+          throw new Error("TooManyAttempts");
+        }
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email },
+          where: { email },
         });
 
         if (!user) {

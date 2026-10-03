@@ -79,6 +79,9 @@ export default function SignInPage() {
           case "CredentialsSignin":
             setError("Invalid email or password");
             break;
+          case "TooManyAttempts":
+            setError("Too many sign-in attempts. Please wait 15 minutes and try again.");
+            break;
           case "AccessDenied":
             setError("Your account has been disabled. Please contact support.");
             break;
