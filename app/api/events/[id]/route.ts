@@ -108,7 +108,6 @@ export async function PUT(
           imageInfo.oldPublicId = publicId;
           await cloudinary.uploader.destroy(publicId);
           imageInfo.oldImageDeleted = true;
-          console.log(`Old image deleted successfully: ${publicId}`);
         } catch (deleteError) {
           console.error("Failed to delete old image:", deleteError);
         }
@@ -136,7 +135,6 @@ export async function PUT(
 
         imageInfo.newImageUrl = uploadResult.secure_url;
         imageInfo.newPublicId = uploadResult.public_id;
-        console.log(`Image uploaded successfully: ${uploadResult.public_id}`);
       } catch (uploadError) {
         console.error("Failed to upload image:", uploadError);
         return NextResponse.json(

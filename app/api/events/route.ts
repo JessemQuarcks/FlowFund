@@ -39,8 +39,6 @@ export async function POST(request: Request) {
       const fileExt = imageFile.name.split(".").pop();
       const publicId = uuidv4();
 
-      console.log("Uploading to Cloudinary...");
-
       const uploadResult: UploadApiResponse | undefined = await new Promise(
         (resolve, reject) => {
           cloudinary.uploader
@@ -68,7 +66,6 @@ export async function POST(request: Request) {
       }
 
       savedImageUrl = uploadResult.url;
-      console.log("Upload successful:", console.log(uploadResult));
     }
 
     const event = await prisma.event.create({
