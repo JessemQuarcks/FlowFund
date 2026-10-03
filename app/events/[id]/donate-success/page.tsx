@@ -12,11 +12,11 @@ import { CheckCircle } from "lucide-react";
 export default async function DonationSuccessPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     amount?: string;
     eventId?: string;
     eventTitle?: string;
-  };
+  }>;
 }) {
   const params = await searchParams;
   const amount = params.amount || "0";
