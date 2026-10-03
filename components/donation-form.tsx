@@ -64,31 +64,40 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
 
     const PayStackPop = (await import("@paystack/inline-js")).default;
 
+    // Paystack accepts any metadata keys; the @types package only lists
+    // custom_fields, so build the object outside the call.
+    const metadata = {
+      // The server checks this matches the fundraiser being credited.
+      fundraiser_id: event.fundraiser.id,
+      custom_fields: [
+        {
+          display_name: "Event Title",
+          variable_name: "event_title",
+          value: event.title,
+        },
+        {
+          display_name: "Donor Name",
+          variable_name: "donor_name",
+          value: isAnonymous
+            ? "Anonymous"
+            : `${donorInfo.firstName} ${donorInfo.lastName}`,
+        },
+      ],
+    };
+
     const popUp = new PayStackPop();
     popUp.newTransaction({
       key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
-      amount: parseFloat(finalAmount) * 100, // Convert to pesewas
+      amount: Math.round(parseFloat(finalAmount) * 100), // Convert to pesewas
       currency: "GHS",
       email: donorInfo.email,
-      reference: `donation_${Date.now()}`,
-      metadata: {
-        custom_fields: [
-          {
-            display_name: "Event Title",
-            variable_name: "event_title",
-            value: event.title,
-          },
-          {
-            display_name: "Donor Name",
-            variable_name: "donor_name",
-            value: isAnonymous
-              ? "Anonymous"
-              : `${donorInfo.firstName} ${donorInfo.lastName}`,
-          },
-        ],
-      },
+      reference: `donation_${crypto.randomUUID()}`,
+      metadata,
       onSuccess: (transaction: any) => verifyPayment(transaction.reference),
-      onCancel: () => alert("Payment cancelled"),
+      onCancel: () => {
+        setIsSubmitting(false);
+        alert("Payment cancelled");
+      },
     });
 
     const verifyPayment = async (reference: string) => {
@@ -113,20 +122,24 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
           let eventId = event.id;
           window.location.href = `/events/${eventId}/donate-success?${params.toString()}`;
         } else {
+          setIsSubmitting(false);
           alert("Payment verification failed");
         }
       } catch (error) {
+        setIsSubmitting(false);
         console.error("Verification error:", error);
       }
     };
   };
 
+  const minimumAmount = Math.max(event.fundraiser?.minimumAmount ?? 0, 0.1);
+  const selectedAmount = Number.parseFloat(
+    amount === "custom" ? customAmount : amount
+  );
   const isAmountValid =
-    amount &&
-    (amount !== "custom" ||
-      (amount === "custom" &&
-        customAmount &&
-        Number.parseFloat(customAmount) >= 0.1));
+    !!amount &&
+    Number.isFinite(selectedAmount) &&
+    selectedAmount >= minimumAmount;
 
   const isDonorInfoValid =
     (isAnonymous && donorInfo.email) ||
@@ -147,7 +160,9 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
               Donation Amount (GH₵)
             </Label>
             <div className="grid grid-cols-3 gap-3">
-              {predefinedAmounts.map((value) => (
+              {predefinedAmounts
+                .filter((value) => Number(value) >= minimumAmount)
+                .map((value) => (
                 <div
                   key={value}
                   onClick={() => handleAmountSelect(value)}
@@ -185,12 +200,15 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
               <Input
                 id="custom-amount"
                 type="number"
-                min="0.1"
-                step="1"
+                min={minimumAmount}
+                step="0.01"
                 placeholder="Enter amount"
                 value={customAmount}
                 onChange={(e) => setCustomAmount(e.target.value)}
               />
+              <p className="text-sm text-neutral-500">
+                Minimum donation: GH₵{minimumAmount.toLocaleString()}
+              </p>
             </div>
           )}
 

@@ -111,6 +111,9 @@ model Fundraiser {
 
 model Donation {
   id String @id @default(uuid())
+  // Paystack transaction reference. Unique so one payment can only be
+  // recorded once. Nullable only for rows created before this column existed.
+  reference String? @unique
   amount Float
   fundraiserId String
   fundraiser Fundraiser @relation(fields: [fundraiserId], references: [id])
