@@ -9,7 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.9.1",
+    "@auth/prisma-adapter": "^2.11.3",
     "@hookform/resolvers": "^3.9.1",
     "@paystack/inline-js": "^2.22.6",
     "@prisma/client": "^6.8.2",
@@ -45,21 +45,20 @@
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "class-variance-authority": "^0.7.1",
-    "cloudinary": "^2.6.1",
+    "cloudinary": "^2.11.0",
     "cloudinary-build-url": "^0.2.4",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
     "embla-carousel-react": "8.5.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
-    "mysql2": "^3.14.1",
-    "next": "15.2.4",
-    "next-auth": "^4.24.11",
+    "next": "^15.5.27",
+    "next-auth": "^4.24.15",
     "next-cloudinary": "^6.16.0",
     "next-themes": "latest",
-    "react": "^19",
+    "react": "^19.3.0",
     "react-day-picker": "^9.7.0",
-    "react-dom": "^19",
+    "react-dom": "^19.3.0",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
     "recharts": "2.15.0",
@@ -69,7 +68,7 @@
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "zod": "^3.25.28",
-    "zod-form-data": "^2.0.7"
+    "zod-form-data": "^2.0.10"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -83,5 +82,8 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@auth/core": "^0.41.3"
   }
 }
