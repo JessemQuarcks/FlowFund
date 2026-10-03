@@ -178,17 +178,22 @@ export async function PUT(
 // Delete event
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     if (!session?.user) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
     const event = await prisma.event.findUnique({
-      where: { id: params.id },
-      include: { fundraiser: true },
+      where: { id },
+      include: {
+        fundraiser: {
+          include: { _count: { select: { donations: true, withdrawals: true } } },
+        },
+      },
     });
 
     if (!event) {
@@ -199,23 +204,39 @@ export async function DELETE(
       return NextResponse.json({ message: "Forbidden" }, { status: 403 });
     }
 
+    // Donation and withdrawal records must never be deleted.
+    if (
+      event.fundraiser &&
+      (event.fundraiser._count.donations > 0 ||
+        event.fundraiser._count.withdrawals > 0)
+    ) {
+      return NextResponse.json(
+        {
+          message:
+            "This event has received donations and cannot be deleted. Contact support to close it.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // The fundraiser foreign key has no cascade, so remove it first.
+    await prisma.$transaction(async (tx) => {
+      if (event.fundraiser) {
+        await tx.fundraiser.delete({ where: { id: event.fundraiser.id } });
+      }
+      await tx.event.delete({ where: { id } });
+    });
+
     // Delete image from Cloudinary if it exists
     if (event.fundraiser?.image) {
       try {
-        const urlParts = event.fundraiser.image.split("/");
-        const publicIdWithExtension = urlParts[urlParts.length - 1];
-        const publicId = `event-images/${publicIdWithExtension.split(".")[0]}`;
-
-        await cloudinary.uploader.destroy(publicId);
+        await cloudinary.uploader.destroy(
+          extractPublicId(event.fundraiser.image)
+        );
       } catch (deleteError) {
         console.error("Failed to delete image:", deleteError);
       }
     }
-
-    // Delete event (this will cascade delete the fundraiser due to foreign key constraints)
-    await prisma.event.delete({
-      where: { id: params.id },
-    });
 
     return NextResponse.json({ message: "Event deleted successfully" });
   } catch (error) {
