@@ -1,6 +1,6 @@
 # FlowFund Production Roadmap
 
-_As of 2026-10-03_
+_As of 2026-10-03; Phase 0 and Phase 1 status updated 2026-10-04_
 
 FlowFund is a working prototype, not yet safe for real money. Donations can be replayed to inflate totals, every event page sends the organiser's password hash to the browser, and withdrawals are not built on main. Two developers need roughly 10–14 weeks to reach a production launch. Phase 0 (about one week) must ship before any live payment is taken.
 
@@ -40,7 +40,7 @@ The stack is Next.js 15 (App Router), Prisma on MySQL, NextAuth v4, Paystack and
 | Area | State | What's true today |
 | --- | --- | --- |
 | Sign up / sign in (email, Google) | Works | No email verification. Password rules exist only in the browser. |
-| Create event + fundraiser | Works | Event and fundraiser are two separate writes, so a failure leaves an orphan event. No server-side image checks. |
+| Create event + fundraiser | Works | Fixed in Phase 1: event and fundraiser are now one write, and images are checked on the server. |
 | Edit event | Works, risky | Target and minimum can change after donations. Reuses the create schema, so an event whose date has passed can no longer be edited. |
 | Donate (Paystack inline) | Works, unsafe | See Critical issues. Fundraiser end date and minimum amount are not enforced. Donor count never increments. |
 | Dashboard | Works | Donations are matched by the email typed at checkout. Shows $ in some places and GH₵ in others. |
@@ -53,7 +53,7 @@ The stack is Next.js 15 (App Router), Prisma on MySQL, NextAuth v4, Paystack and
 | Forgot password, Profile, Contact | Stub | Submit handlers are `setTimeout` + `alert`. Profile shows "New York, USA" for everyone. |
 | Email (receipts, alerts, resets) | Missing | No email provider is wired up. |
 | Admin / moderation / organiser verification | Missing | Anyone can create a campaign and request payouts. |
-| Tests, CI, README, `.env.example` | Missing | Build is configured to ignore TypeScript and ESLint errors. |
+| Tests, CI, README, `.env.example` | Done (Phase 1) | Unit, integration and end-to-end tests run in GitHub Actions. Staging is not set up yet. |
 
 The `origin/event` branch is two commits ahead of main (last touched July 2025): a console.log cleanup and a mock withdrawal API. Merge the cleanup; rewrite the withdrawal API rather than merging it (see Critical issues).
 
@@ -96,7 +96,7 @@ Beyond the bugs, several design choices will not hold up in production. These ar
 
 Gate: no critical `npm audit` findings and Critical issues 1, 2, 5, 6 and 7 closed. Keep Paystack on test keys until Phase 2 is done.
 
-Status: code done on branch `phase-0-hotfixes`; two manual items remain (secret rotation, closing the mock withdrawal commit).
+Status: code done and merged to `main`; two manual items remain (secret rotation, closing the mock withdrawal commit).
 
 - [x] Event page selects only the organiser's `id` and `name`; add a global Prisma `omit` for `password`
 - [x] Signup returns `{ id, email, name }`; validate email and password policy on the server with zod
@@ -115,16 +115,28 @@ Status: code done on branch `phase-0-hotfixes`; two manual items remain (secret 
 
 Gate: every PR runs typecheck, lint, tests and build in CI, and a staging environment mirrors production.
 
-- [ ] README covering setup, env vars, migrations and Paystack test mode
-- [ ] Add `"postinstall": "prisma generate"`; the generated client is gitignored, so a fresh deploy fails without it
-- [ ] One package manager and lockfile; pin every `latest` dependency; remove unused deps and duplicate files
-- [ ] ESLint and Prettier configs (there is no ESLint config today, so `next lint` cannot run)
-- [ ] Validate env vars at boot (zod or `@t3-oss/env-nextjs`); several are read with `!` and fail at runtime
-- [ ] Vitest for services; Playwright end-to-end for sign up → create → donate (Paystack test) → withdraw
-- [ ] GitHub Actions: typecheck, lint, test, build, migration drift check; branch protection on `main`
-- [ ] Introduce `lib/services` and a shared error type; zod failures return 400
-- [ ] Staging environment with its own database and Paystack test keys
+Status: code done on `main` (2026-10-04). Left: branch protection (a GitHub setting), staging (waits on the hosting decision), the product name, and the Next 16 / Tailwind 4 upgrade.
+
+- [x] README covering setup, env vars, migrations and Paystack test mode
+- [x] Add `"postinstall": "prisma generate"`; the generated client is gitignored, so a fresh deploy fails without it
+- [x] One package manager and lockfile (npm); pin every `latest` dependency; remove unused deps (including the shadcn components that were the only users of recharts, embla, vaul, cmdk, input-otp and react-resizable-panels) and duplicate files; one bcrypt library (`bcryptjs`)
+- [x] ESLint (flat config, run as `eslint .`) and Prettier configs; lint errors fixed; `.gitattributes` keeps LF endings
+- [x] Validate env vars at boot with zod (`lib/env.ts`, loaded from `instrumentation.ts`)
+- [x] Vitest: unit tests, plus integration tests of the services against real MySQL (replay, concurrency, ownership, deletion rules). Playwright: sign up → sign in → create event → dashboard, plus a check that visitors never receive the organiser's email or hash
+- [ ] Playwright donate (Paystack test) → withdraw — waits on Phase 2's server-initialised transactions, webhook and withdrawal API
+- [x] GitHub Actions: typecheck, lint, format, unit tests, migration drift check, integration tests, build and end-to-end tests
+- [ ] Branch protection on `main` requiring the three CI jobs — GitHub → Settings → Branches (needs a repo admin)
+- [x] Introduce `lib/services` and a shared error type (`AppError`, one `{ message, code, issues? }` response shape); zod failures return 400. Pages still query Prisma directly; move those reads as Phase 3 rewrites each page
+- [ ] Staging environment with its own database and Paystack test keys — waits on the hosting decision
 - [ ] Settle the product name and rename the package
+- [ ] Upgrade to Next 16 and Tailwind 4 to clear the remaining build-time `npm audit` findings (7 high, 1 moderate). Next 16 drops `next lint` (already replaced) and renames `middleware.ts` to `proxy.ts`
+
+Found and fixed along the way:
+
+- Six old migrations used lowercase table names (`user`, `fundraiser`), which only work on case-insensitive MySQL (Windows/macOS). `prisma migrate deploy` failed on Linux at the second migration, so production could not have been created from them. Local databases made before the fix must be reset (see README)
+- Creating an event without opening the category dropdown always failed: the default value matched no option
+- Sign-up and sign-in forms submitted before hydration sent the password in the URL; they now POST
+- Event images: server-side type and 5MB size checks; the new image is uploaded before the old one is deleted; edits no longer orphan old images; event and fundraiser are created in one write
 
 ## Phase 2 — Money correctness (3–4 weeks)
 
