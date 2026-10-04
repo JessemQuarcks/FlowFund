@@ -6,5 +6,5 @@
 
 */
 -- AlterTable
-ALTER TABLE `fundraiser` DROP COLUMN `animosity`,
+ALTER TABLE `Fundraiser` DROP COLUMN `animosity`,
     ADD COLUMN `anonymity` BOOLEAN NOT NULL;

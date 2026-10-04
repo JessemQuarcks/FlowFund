@@ -5,4 +5,4 @@
 
 */
 -- AlterTable
-ALTER TABLE `user` MODIFY `email` VARCHAR(191) NOT NULL;
+ALTER TABLE `User` MODIFY `email` VARCHAR(191) NOT NULL;

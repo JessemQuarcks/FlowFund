@@ -5,13 +5,13 @@
 
 */
 -- DropForeignKey
-ALTER TABLE `donation` DROP FOREIGN KEY `Donation_userId_fkey`;
+ALTER TABLE `Donation` DROP FOREIGN KEY `Donation_userId_fkey`;
 
 -- DropIndex
-DROP INDEX `Donation_userId_fkey` ON `donation`;
+DROP INDEX `Donation_userId_fkey` ON `Donation`;
 
 -- AlterTable
-ALTER TABLE `donation` DROP COLUMN `userId`,
+ALTER TABLE `Donation` DROP COLUMN `userId`,
     ADD COLUMN `donorEmail` VARCHAR(191) NULL,
     ADD COLUMN `donorFirstName` VARCHAR(191) NULL,
     ADD COLUMN `donorLastName` VARCHAR(191) NULL;

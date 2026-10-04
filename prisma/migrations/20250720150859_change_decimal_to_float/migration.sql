@@ -10,13 +10,13 @@
 
 */
 -- AlterTable
-ALTER TABLE `donation` MODIFY `amount` DOUBLE NOT NULL;
+ALTER TABLE `Donation` MODIFY `amount` DOUBLE NOT NULL;
 
 -- AlterTable
-ALTER TABLE `fundraiser` MODIFY `targetAmount` DOUBLE NOT NULL,
+ALTER TABLE `Fundraiser` MODIFY `targetAmount` DOUBLE NOT NULL,
     MODIFY `minimumAmount` DOUBLE NOT NULL,
     MODIFY `raisedAmount` DOUBLE NOT NULL,
     MODIFY `totalWithdrawn` DOUBLE NOT NULL;
 
 -- AlterTable
-ALTER TABLE `withdrawal` MODIFY `amount` DOUBLE NOT NULL;
+ALTER TABLE `Withdrawal` MODIFY `amount` DOUBLE NOT NULL;
