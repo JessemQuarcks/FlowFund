@@ -93,7 +93,7 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
       email: donorInfo.email,
       reference: `donation_${crypto.randomUUID()}`,
       metadata,
-      onSuccess: (transaction: any) => verifyPayment(transaction.reference),
+      onSuccess: (transaction) => verifyPayment(transaction.reference),
       onCancel: () => {
         setIsSubmitting(false);
         alert("Payment cancelled");
@@ -119,7 +119,7 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
             eventId: event.id,
             eventTitle: event.title,
           });
-          let eventId = event.id;
+          const eventId = event.id;
           window.location.href = `/events/${eventId}/donate-success?${params.toString()}`;
         } else {
           setIsSubmitting(false);

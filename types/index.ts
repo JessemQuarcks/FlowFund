@@ -39,7 +39,7 @@ export type EventWithFundraiserAndUser = Prisma.EventGetPayload<{
 
 export type EventWithDaysLeft = Event & {
   fundraiser: Fundraiser | null;
-  daysLeft: Number;
+  daysLeft: number;
 };
 
 export type DonorInfo = {

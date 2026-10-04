@@ -93,7 +93,7 @@ export async function PUT(
       fundraiser: fundraiserArgs,
     } = createEventSchema.parse(formData);
 
-    let imageInfo = {
+    const imageInfo = {
       oldImageDeleted: false,
       oldPublicId: null as string | null,
       newImageUrl: null as string | null,
