@@ -1,3 +1,5 @@
+import { errors } from "@/lib/errors";
+
 // Fixed-window rate limiter kept in process memory.
 //
 // Limits are per server instance: on serverless hosting each instance keeps
@@ -57,12 +59,8 @@ export function getClientIp(
   return read("x-real-ip") ?? "unknown";
 }
 
-export function tooManyRequests(result: RateLimitResult) {
-  return Response.json(
-    { message: "Too many requests. Please try again later." },
-    {
-      status: 429,
-      headers: { "Retry-After": String(result.retryAfterSeconds) },
-    },
-  );
+// Throws a 429 AppError when the key is over its limit.
+export function enforceRateLimit(key: string, limit: number, windowMs: number) {
+  const result = rateLimit(key, limit, windowMs);
+  if (!result.success) throw errors.rateLimited(result.retryAfterSeconds);
 }

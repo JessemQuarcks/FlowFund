@@ -42,15 +42,19 @@ export default function CreateEventPage() {
       });
 
       if (!response.ok) {
-        console.error(response);
-        throw new Error("Failed to create event");
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.message ?? "Failed to create event");
       }
 
       const event = await response.json();
       router.push(`/events/${event.id}`);
     } catch (error) {
       console.error("Failed to create event:", error);
-      alert("Failed to create event. Please try again.");
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to create event. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }

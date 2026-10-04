@@ -31,3 +31,5 @@ export const createEventSchema = zfd.formData({
     ),
   }),
 });
+
+export type CreateEventInput = z.infer<typeof createEventSchema>;

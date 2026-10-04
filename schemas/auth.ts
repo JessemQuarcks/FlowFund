@@ -11,3 +11,5 @@ export const signupSchema = z.object({
     .regex(/[0-9]/, "Password must include a number")
     .regex(/[^A-Za-z0-9]/, "Password must include a special character"),
 });
+
+export type SignupInput = z.infer<typeof signupSchema>;
