@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { env } from "@/lib/env";
 import { Prisma } from "@/lib/generated/prisma";
 import { getClientIp, rateLimit, tooManyRequests } from "@/lib/rate-limit";
 
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
       `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
       {
         headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
         cache: "no-store",
