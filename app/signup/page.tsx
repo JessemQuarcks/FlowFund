@@ -110,7 +110,9 @@ export default function SignUpPage() {
               Enter your information to get started
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
+          {/* method="post" keeps the password out of the URL if the form is
+              submitted before the page has hydrated. */}
+          <form method="post" onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               {error && (
                 <div className="p-3 text-sm text-white bg-destructive rounded-md">
@@ -119,7 +121,7 @@ export default function SignUpPage() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="Name">Full Name</Label>
+                <Label htmlFor="firstName">Full Name</Label>
                 {/* TEMPORARY: Replaced custom Input with standard HTML input */}
                 <input
                   id="firstName"

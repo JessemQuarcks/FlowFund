@@ -188,7 +188,10 @@ export default function SignInPage() {
               Sign in to your FundFlow account
             </CardDescription>
           </CardHeader>
+          {/* method="post" keeps the password out of the URL if the form is
+              submitted before the page has hydrated. */}
           <form
+            method="post"
             onSubmit={(e) => {
               e.preventDefault();
               handleSubmit(formData.email, formData.password);

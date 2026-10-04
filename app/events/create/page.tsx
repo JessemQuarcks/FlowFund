@@ -112,7 +112,7 @@ export default function CreateEventPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="category">Category</Label>
-                <Select name="event.category" defaultValue="community">
+                <Select name="event.category" defaultValue="COMMUNITY">
                   <SelectTrigger id="category">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
