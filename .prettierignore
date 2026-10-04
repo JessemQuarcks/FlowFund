@@ -5,3 +5,4 @@ package-lock.json
 prisma/migrations
 playwright-report
 test-results
+*.md

@@ -11,8 +11,8 @@ export const createEventSchema = zfd.formData({
       z
         .string()
         .pipe(
-          z.coerce.date().min(new Date(), "Event date cannot be in the past")
-        )
+          z.coerce.date().min(new Date(), "Event date cannot be in the past"),
+        ),
     ),
     image: zfd.file(z.instanceof(File).optional()),
   }),
@@ -26,8 +26,8 @@ export const createEventSchema = zfd.formData({
         .pipe(
           z.coerce
             .date()
-            .min(new Date(), "Fund raiser end date cannot be in the past")
-        )
+            .min(new Date(), "Fund raiser end date cannot be in the past"),
+        ),
     ),
   }),
 });

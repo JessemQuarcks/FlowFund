@@ -34,17 +34,17 @@ function publicDonation(donation: { id: string; amount: number }) {
 
 function alreadyRecorded(
   donation: { id: string; amount: number; fundraiserId: string },
-  fundraiserId: string
+  fundraiserId: string,
 ) {
   if (donation.fundraiserId !== fundraiserId) {
     return NextResponse.json(
       { message: "Payment reference already used" },
-      { status: 409 }
+      { status: 409 },
     );
   }
   return NextResponse.json(
     { success: true, donation: publicDonation(donation) },
-    { status: 200 }
+    { status: 200 },
   );
 }
 
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   const limit = rateLimit(
     `verify:ip:${getClientIp(request.headers)}`,
     30,
-    10 * 60 * 1000
+    10 * 60 * 1000,
   );
   if (!limit.success) return tooManyRequests(limit);
 
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
           "Content-Type": "application/json",
         },
         cache: "no-store",
-      }
+      },
     );
     const paymentData: PaystackVerifyResponse = await response.json();
     const payment = paymentData.data;
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
     if (!response.ok || !paymentData.status || payment?.status !== "success") {
       return NextResponse.json(
         { message: "Payment verification failed" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     ) {
       return NextResponse.json(
         { message: "Payment does not match this fundraiser" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
     if (!fundraiser) {
       return NextResponse.json(
         { message: "Fundraiser not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -123,51 +123,54 @@ export async function POST(request: Request) {
     // enforcement needs server-initialised transactions (roadmap Phase 2).
     if (amount < fundraiser.minimumAmount) {
       console.warn(
-        `Donation ${reference} of ${amount} is below the minimum of ${fundraiser.minimumAmount} for fundraiser ${fundraiserId}`
+        `Donation ${reference} of ${amount} is below the minimum of ${fundraiser.minimumAmount} for fundraiser ${fundraiserId}`,
       );
     }
 
     const recordDonation = () =>
-      prisma.$transaction(async (tx) => {
-        // Lock the fundraiser row first so concurrent donations to the same
-        // fundraiser queue up instead of deadlocking (the donation insert's
-        // foreign key check would otherwise share-lock it first).
-        await tx.fundraiser.update({
-          where: { id: fundraiserId },
-          data: { raisedAmount: { increment: amount } },
-        });
-
-        // Anonymous donations always count as a new donor; named donors are
-        // counted once per fundraiser by email.
-        const isNewDonor = donorInfo?.email
-          ? (await tx.donation.count({
-              where: { fundraiserId, donorEmail: donorInfo.email },
-            })) === 0
-          : true;
-
-        const created = await tx.donation.create({
-          data: {
-            reference,
-            amount,
-            paymentDetails: paymentData,
-            donorFirstName: donorInfo?.firstName,
-            donorLastName: donorInfo?.lastName,
-            donorEmail: donorInfo?.email,
-            fundraiserId,
-          },
-        });
-
-        if (isNewDonor) {
+      prisma.$transaction(
+        async (tx) => {
+          // Lock the fundraiser row first so concurrent donations to the same
+          // fundraiser queue up instead of deadlocking (the donation insert's
+          // foreign key check would otherwise share-lock it first).
           await tx.fundraiser.update({
             where: { id: fundraiserId },
-            data: { donorCount: { increment: 1 } },
+            data: { raisedAmount: { increment: amount } },
           });
-        }
 
-        return created;
-        // READ COMMITTED so the donor count, read after the fundraiser lock is
-        // held, sees donations committed by transactions that held it before.
-      }, { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted });
+          // Anonymous donations always count as a new donor; named donors are
+          // counted once per fundraiser by email.
+          const isNewDonor = donorInfo?.email
+            ? (await tx.donation.count({
+                where: { fundraiserId, donorEmail: donorInfo.email },
+              })) === 0
+            : true;
+
+          const created = await tx.donation.create({
+            data: {
+              reference,
+              amount,
+              paymentDetails: paymentData,
+              donorFirstName: donorInfo?.firstName,
+              donorLastName: donorInfo?.lastName,
+              donorEmail: donorInfo?.email,
+              fundraiserId,
+            },
+          });
+
+          if (isNewDonor) {
+            await tx.fundraiser.update({
+              where: { id: fundraiserId },
+              data: { donorCount: { increment: 1 } },
+            });
+          }
+
+          return created;
+          // READ COMMITTED so the donor count, read after the fundraiser lock is
+          // held, sees donations committed by transactions that held it before.
+        },
+        { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
+      );
 
     // The payment is already captured, so retry deadlocks rather than
     // dropping the record.
@@ -186,7 +189,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       { success: true, donation: publicDonation(donation) },
-      { status: 200 }
+      { status: 200 },
     );
   } catch (error) {
     // Two concurrent requests for the same reference: the unique index lets
@@ -205,7 +208,7 @@ export async function POST(request: Request) {
     console.error("Verification error:", error);
     return NextResponse.json(
       { message: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -14,7 +14,7 @@ export type RateLimitResult = { success: boolean; retryAfterSeconds: number };
 export function rateLimit(
   key: string,
   limit: number,
-  windowMs: number
+  windowMs: number,
 ): RateLimitResult {
   const now = Date.now();
 
@@ -43,7 +43,7 @@ export function rateLimit(
 // x-forwarded-for is only trustworthy behind a proxy that sets it (Vercel,
 // a load balancer). Without one, clients can spoof it.
 export function getClientIp(
-  headers: Headers | Record<string, string | string[] | undefined> | undefined
+  headers: Headers | Record<string, string | string[] | undefined> | undefined,
 ): string {
   const read = (name: string): string | undefined => {
     if (!headers) return undefined;
@@ -63,6 +63,6 @@ export function tooManyRequests(result: RateLimitResult) {
     {
       status: 429,
       headers: { "Retry-After": String(result.retryAfterSeconds) },
-    }
+    },
   );
 }

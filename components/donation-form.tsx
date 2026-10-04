@@ -134,7 +134,7 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
 
   const minimumAmount = Math.max(event.fundraiser?.minimumAmount ?? 0, 0.1);
   const selectedAmount = Number.parseFloat(
-    amount === "custom" ? customAmount : amount
+    amount === "custom" ? customAmount : amount,
   );
   const isAmountValid =
     !!amount &&
@@ -163,10 +163,10 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
               {predefinedAmounts
                 .filter((value) => Number(value) >= minimumAmount)
                 .map((value) => (
-                <div
-                  key={value}
-                  onClick={() => handleAmountSelect(value)}
-                  className={`
+                  <div
+                    key={value}
+                    onClick={() => handleAmountSelect(value)}
+                    className={`
                       p-3 rounded-md border text-center cursor-pointer transition-all
                       ${
                         amount === value
@@ -174,10 +174,10 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
                           : "border-gray-200 hover:border-primary-300 hover:bg-primary-50 dark:border-gray-700 dark:hover:border-primary-700 dark:hover:bg-primary-900/20"
                       }
                     `}
-                >
-                  ₵{value}
-                </div>
-              ))}
+                  >
+                    ₵{value}
+                  </div>
+                ))}
             </div>
             <div
               onClick={() => handleAmountSelect("custom")}
@@ -312,8 +312,8 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
                     !isAmountValid
                       ? ""
                       : amount === "custom"
-                      ? customAmount
-                      : amount
+                        ? customAmount
+                        : amount
                   }`}
             </Button>
           </div>

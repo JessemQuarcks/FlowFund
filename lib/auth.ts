@@ -37,7 +37,7 @@ export const authOptions: AuthOptions = {
         const byEmail = rateLimit(
           `signin:email:${email.toLowerCase()}`,
           10,
-          15 * 60 * 1000
+          15 * 60 * 1000,
         );
         if (!byIp.success || !byEmail.success) {
           throw new Error("TooManyAttempts");
@@ -54,13 +54,13 @@ export const authOptions: AuthOptions = {
 
         if (!user.password) {
           throw new Error(
-            "Password-based authentication is not set up for this account"
+            "Password-based authentication is not set up for this account",
           );
         }
 
         const passwordMatch = await bcrypt.compare(
           credentials.password,
-          user.password!
+          user.password!,
         );
         if (!passwordMatch) {
           throw new Error("Incorrect username or password");

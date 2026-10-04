@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         console.error("Invalid image file");
         return NextResponse.json(
           { error: "Invalid image file" },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -51,17 +51,17 @@ export async function POST(request: Request) {
               (error, result) => {
                 if (error) reject(error);
                 else resolve(result);
-              }
+              },
             )
             .end(buffer);
-        }
+        },
       );
 
       if (!uploadResult || typeof uploadResult === "string") {
         console.error("Cloudinary upload failed:", uploadResult);
         return NextResponse.json(
           { error: "Failed to upload image" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -92,7 +92,7 @@ export async function POST(request: Request) {
     console.error("Failed to create event:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,20 +1,27 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 // import { Input } from "@/components/ui/input" // Comment this out for testing
-import { Label } from "@/components/ui/label"
-import { TrendingUp, Loader2 } from "lucide-react"
-import { Separator } from "@/components/ui/separator"
+import { Label } from "@/components/ui/label";
+import { TrendingUp, Loader2 } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
 
 export default function SignUpPage() {
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -22,35 +29,35 @@ export default function SignUpPage() {
     password: "",
     confirmPassword: "",
     agreeTerms: false,
-  })
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target
+    const { name, value, type, checked } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError(null)
+    e.preventDefault();
+    setIsSubmitting(true);
+    setError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match")
-      setIsSubmitting(false)
-      return
+      setError("Passwords do not match");
+      setIsSubmitting(false);
+      return;
     }
 
     // Basic password validation
-    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/
+    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])(?=.{8,})/;
     if (!passwordRegex.test(formData.password)) {
       setError(
-        "Password must be at least 8 characters long and include a number and a special character."
-      )
-      setIsSubmitting(false)
-      return
+        "Password must be at least 8 characters long and include a number and a special character.",
+      );
+      setIsSubmitting(false);
+      return;
     }
 
     try {
@@ -64,23 +71,23 @@ export default function SignUpPage() {
           email: formData.email,
           password: formData.password,
         }),
-      })
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Failed to create account");
       }
 
-      router.push("/signin?registered=true")
+      router.push("/signin?registered=true");
     } catch (err) {
       setError(
         (err instanceof Error && err.message) ||
-          "Something went wrong. Please try again."
-      )
+          "Something went wrong. Please try again.",
+      );
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   return (
     <div className="container flex items-center justify-center min-h-screen py-8 bg-gradient-to-br from-primary-50 to-white dark:from-primary-950 dark:to-black">
@@ -88,14 +95,20 @@ export default function SignUpPage() {
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary-600" />
-            <span className="text-xl font-bold green-text-gradient">FundFlow</span>
+            <span className="text-xl font-bold green-text-gradient">
+              FundFlow
+            </span>
           </Link>
         </div>
 
         <Card className="gradient-card">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl font-bold text-center">Create an account</CardTitle>
-            <CardDescription className="text-center">Enter your information to get started</CardDescription>
+            <CardTitle className="text-2xl font-bold text-center">
+              Create an account
+            </CardTitle>
+            <CardDescription className="text-center">
+              Enter your information to get started
+            </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
@@ -105,21 +118,19 @@ export default function SignUpPage() {
                 </div>
               )}
 
-              
-                <div className="space-y-2">
-                  <Label htmlFor="Name">Full Name</Label>
-                  {/* TEMPORARY: Replaced custom Input with standard HTML input */}
-                  <input
-                    id="firstName"
-                    name="firstName"
-                    type="text" // Specify type for standard input
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" // Add some basic tailwind classes for styling
-                    required
-                  />
-                </div>
-             
+              <div className="space-y-2">
+                <Label htmlFor="Name">Full Name</Label>
+                {/* TEMPORARY: Replaced custom Input with standard HTML input */}
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text" // Specify type for standard input
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50" // Add some basic tailwind classes for styling
+                  required
+                />
+              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -149,7 +160,8 @@ export default function SignUpPage() {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters long and include a number and a special character.
+                  Password must be at least 8 characters long and include a
+                  number and a special character.
                 </p>
               </div>
 
@@ -179,20 +191,32 @@ export default function SignUpPage() {
                 />
                 <Label htmlFor="agreeTerms" className="text-sm">
                   I agree to the{" "}
-                  <Link href="/terms" className="text-primary-600 hover:underline">
+                  <Link
+                    href="/terms"
+                    className="text-primary-600 hover:underline"
+                  >
                     Terms of Service
                   </Link>{" "}
                   and{" "}
-                  <Link href="/privacy" className="text-primary-600 hover:underline">
+                  <Link
+                    href="/privacy"
+                    className="text-primary-600 hover:underline"
+                  >
                     Privacy Policy
                   </Link>
                 </Label>
               </div>
 
-              <Button type="submit" className="w-full" disabled={isSubmitting} variant="gradient">
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={isSubmitting}
+                variant="gradient"
+              >
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating
+                    account...
                   </>
                 ) : (
                   "Sign Up"
@@ -202,13 +226,20 @@ export default function SignUpPage() {
               <div className="relative my-4">
                 <Separator />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="bg-card px-2 text-xs text-muted-foreground">OR CONTINUE WITH</span>
+                  <span className="bg-card px-2 text-xs text-muted-foreground">
+                    OR CONTINUE WITH
+                  </span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <Button variant="outline" type="button" className="w-full">
-                  <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg
+                    className="mr-2 h-4 w-4"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
                     <path
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                       fill="#4285F4"
@@ -253,5 +284,5 @@ export default function SignUpPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

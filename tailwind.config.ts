@@ -1,5 +1,5 @@
-import type { Config } from "tailwindcss"
-import tailwindcssAnimate from "tailwindcss-animate"
+import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 const config = {
   darkMode: ["class"],
@@ -88,7 +88,8 @@ const config = {
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "green-gradient": "linear-gradient(to right, #22c55e, #16a34a)",
-        "green-gradient-vertical": "linear-gradient(to bottom, #22c55e, #16a34a)",
+        "green-gradient-vertical":
+          "linear-gradient(to bottom, #22c55e, #16a34a)",
         "green-to-teal": "linear-gradient(to right, #22c55e, #0d9488)",
         "green-to-emerald": "linear-gradient(to right, #16a34a, #059669)",
         "green-to-lime": "linear-gradient(to right, #16a34a, #65a30d)",
@@ -96,6 +97,6 @@ const config = {
     },
   },
   plugins: [tailwindcssAnimate],
-} satisfies Config
+} satisfies Config;
 
-export default config
+export default config;

@@ -1,11 +1,24 @@
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, Users, Clock, Filter } from "lucide-react"
-import { prisma } from "@/lib/prisma"
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search, Users, Clock, Filter } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
 export default async function EventsPage() {
   // Fetch events from database with their fundraiser data
@@ -15,25 +28,25 @@ export default async function EventsPage() {
       user: {
         select: {
           name: true,
-        }
-      }
+        },
+      },
     },
     orderBy: {
-      dateAdded: 'desc'
-    }
+      dateAdded: "desc",
+    },
   });
 
   // Helper function to get category display name
   const getCategoryDisplayName = (category: string) => {
     const categoryMap: { [key: string]: string } = {
       COMMUNITY: "Community",
-      EDUCATIONAL: "Education", 
+      EDUCATIONAL: "Education",
       ENVIRONMENT: "Environment",
       MEDICAL: "Medical",
       NONPROFIT: "Nonprofit",
       EMERGENCY: "Emergency",
       ANIMALS: "Animals",
-      OTHER: "Other"
+      OTHER: "Other",
     };
     return categoryMap[category] || category;
   };
@@ -51,7 +64,9 @@ export default async function EventsPage() {
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold">Discover Fundraisers</h1>
-          <p className="text-muted-foreground mt-1">Find and support causes that matter to you</p>
+          <p className="text-muted-foreground mt-1">
+            Find and support causes that matter to you
+          </p>
         </div>
         <Link href="/events/create">
           <Button>Start a Fundraiser</Button>
@@ -67,7 +82,11 @@ export default async function EventsPage() {
             <CardContent>
               <div className="relative">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input type="search" placeholder="Search fundraisers..." className="pl-8" />
+                <Input
+                  type="search"
+                  placeholder="Search fundraisers..."
+                  className="pl-8"
+                />
               </div>
             </CardContent>
           </Card>
@@ -131,7 +150,9 @@ export default async function EventsPage() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {events.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground">No fundraisers found. Be the first to create one!</p>
+              <p className="text-muted-foreground">
+                No fundraisers found. Be the first to create one!
+              </p>
               <Link href="/events/create" className="mt-4 inline-block">
                 <Button>Start a Fundraiser</Button>
               </Link>
@@ -140,7 +161,10 @@ export default async function EventsPage() {
             events.map((event) => (
               <Card key={event.id} className="overflow-hidden">
                 <img
-                  src={event.fundraiser?.image || "/placeholder.svg?height=200&width=400"}
+                  src={
+                    event.fundraiser?.image ||
+                    "/placeholder.svg?height=200&width=400"
+                  }
                   alt={event.title}
                   className="aspect-video w-full object-cover"
                   width={400}
@@ -153,7 +177,9 @@ export default async function EventsPage() {
                     </span>
                   </div>
                   <CardTitle className="line-clamp-1">{event.title}</CardTitle>
-                  <CardDescription className="line-clamp-2">{event.description}</CardDescription>
+                  <CardDescription className="line-clamp-2">
+                    {event.description}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -162,15 +188,31 @@ export default async function EventsPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span>
-                              ${Number(event.fundraiser.raisedAmount).toLocaleString()} raised of ${Number(event.fundraiser.targetAmount).toLocaleString()}
+                              $
+                              {Number(
+                                event.fundraiser.raisedAmount,
+                              ).toLocaleString()}{" "}
+                              raised of $
+                              {Number(
+                                event.fundraiser.targetAmount,
+                              ).toLocaleString()}
                             </span>
                             <span className="font-medium text-primary-600">
-                              {Math.round((Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100)}%
+                              {Math.round(
+                                (Number(event.fundraiser.raisedAmount) /
+                                  Number(event.fundraiser.targetAmount)) *
+                                  100,
+                              )}
+                              %
                             </span>
                           </div>
-                          <Progress 
-                            value={(Number(event.fundraiser.raisedAmount) / Number(event.fundraiser.targetAmount)) * 100} 
-                            className="h-2" 
+                          <Progress
+                            value={
+                              (Number(event.fundraiser.raisedAmount) /
+                                Number(event.fundraiser.targetAmount)) *
+                              100
+                            }
+                            className="h-2"
                           />
                         </div>
                         <div className="flex justify-between text-sm text-muted-foreground">
@@ -180,7 +222,9 @@ export default async function EventsPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            <span>{getDaysLeft(event.fundraiser.endDate)} days left</span>
+                            <span>
+                              {getDaysLeft(event.fundraiser.endDate)} days left
+                            </span>
                           </div>
                         </div>
                       </>
@@ -195,7 +239,7 @@ export default async function EventsPage() {
                 <CardFooter>
                   <Link href={`/events/${event.id}`} className="w-full">
                     <Button className="w-full">
-                      {event.fundraiser ? 'Donate Now' : 'View Event'}
+                      {event.fundraiser ? "Donate Now" : "View Event"}
                     </Button>
                   </Link>
                 </CardFooter>
@@ -205,5 +249,5 @@ export default async function EventsPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

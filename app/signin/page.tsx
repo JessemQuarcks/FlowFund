@@ -80,7 +80,9 @@ export default function SignInPage() {
             setError("Invalid email or password");
             break;
           case "TooManyAttempts":
-            setError("Too many sign-in attempts. Please wait 15 minutes and try again.");
+            setError(
+              "Too many sign-in attempts. Please wait 15 minutes and try again.",
+            );
             break;
           case "AccessDenied":
             setError("Your account has been disabled. Please contact support.");
@@ -93,7 +95,6 @@ export default function SignInPage() {
 
       // Successful login
       window.location.href = result.url || "/dashboard";
-
     } catch (err) {
       setError("An unexpected error occurred. Please try again later.");
       console.error("Sign-in error:", err);

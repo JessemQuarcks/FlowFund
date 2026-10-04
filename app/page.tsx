@@ -28,8 +28,8 @@ export default async function Home() {
           0,
           Math.ceil(
             (new Date(e.fundraiser.endDate).getTime() - Date.now()) /
-              (1000 * 60 * 60 * 24)
-          )
+              (1000 * 60 * 60 * 24),
+          ),
         )
       : 0,
   }));
@@ -117,7 +117,7 @@ export default async function Home() {
                               ? Math.round(
                                   (Number(event.fundraiser.raisedAmount) /
                                     Number(event.fundraiser.targetAmount)) *
-                                    100
+                                    100,
                                 )
                               : 0}
                             %

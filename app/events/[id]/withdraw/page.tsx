@@ -78,7 +78,7 @@ export default function WithdrawFundsPage() {
 
     if (amount > availableAmount) {
       setError(
-        `You can only withdraw up to $${availableAmount.toLocaleString()}`
+        `You can only withdraw up to $${availableAmount.toLocaleString()}`,
       );
       setIsSubmitting(false);
       return;
@@ -106,7 +106,7 @@ export default function WithdrawFundsPage() {
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
-          errorData.error || "Failed to submit withdrawal request"
+          errorData.error || "Failed to submit withdrawal request",
         );
       }
 
@@ -119,7 +119,7 @@ export default function WithdrawFundsPage() {
       setError(
         error instanceof Error
           ? error.message
-          : "Failed to submit withdrawal request"
+          : "Failed to submit withdrawal request",
       );
     } finally {
       setIsSubmitting(false);

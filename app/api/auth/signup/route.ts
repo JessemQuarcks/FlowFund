@@ -8,7 +8,7 @@ export async function POST(request: Request) {
   const limit = rateLimit(
     `signup:ip:${getClientIp(request.headers)}`,
     5,
-    60 * 60 * 1000
+    60 * 60 * 1000,
   );
   if (!limit.success) return tooManyRequests(limit);
 
@@ -17,8 +17,10 @@ export async function POST(request: Request) {
     const parsed = signupSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { message: parsed.error.issues[0]?.message ?? "Invalid sign-up details" },
-        { status: 400 }
+        {
+          message: parsed.error.issues[0]?.message ?? "Invalid sign-up details",
+        },
+        { status: 400 },
       );
     }
     const { email, name, password } = parsed.data;
@@ -32,7 +34,7 @@ export async function POST(request: Request) {
     if (existingUser) {
       return NextResponse.json(
         { message: "Email already exists" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 

@@ -1,30 +1,37 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Trash2, Edit } from "lucide-react"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Trash2, Edit } from "lucide-react";
 
 export default function ProfilePage() {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsSubmitting(true)
+    e.preventDefault();
+    setIsSubmitting(true);
 
     // In a real app, this would submit to an API
     setTimeout(() => {
-      setIsSubmitting(false)
-      alert("Profile updated successfully!")
-    }, 1000)
-  }
+      setIsSubmitting(false);
+      alert("Profile updated successfully!");
+    }, 1000);
+  };
 
   return (
     <div className="container py-8 max-w-3xl">
@@ -42,13 +49,18 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
-              <CardDescription>Update your personal information and public profile</CardDescription>
+              <CardDescription>
+                Update your personal information and public profile
+              </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
               <CardContent className="space-y-6">
                 <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
                   <Avatar className="h-24 w-24">
-                    <AvatarImage src="/placeholder-user.jpg" alt="Profile picture" />
+                    <AvatarImage
+                      src="/placeholder-user.jpg"
+                      alt="Profile picture"
+                    />
                     <AvatarFallback>JD</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 space-y-2">
@@ -91,12 +103,20 @@ export default function ProfilePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="location">Location</Label>
-                  <Input id="location" placeholder="City, Country" defaultValue="New York, USA" />
+                  <Input
+                    id="location"
+                    placeholder="City, Country"
+                    defaultValue="New York, USA"
+                  />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="website">Website</Label>
-                  <Input id="website" type="url" placeholder="https://example.com" />
+                  <Input
+                    id="website"
+                    type="url"
+                    placeholder="https://example.com"
+                  />
                 </div>
               </CardContent>
               <CardFooter>
@@ -112,12 +132,19 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Account Settings</CardTitle>
-              <CardDescription>Manage your account details and preferences</CardDescription>
+              <CardDescription>
+                Manage your account details and preferences
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" defaultValue="john.doe@example.com" required />
+                <Input
+                  id="email"
+                  type="email"
+                  defaultValue="john.doe@example.com"
+                  required
+                />
               </div>
 
               <div className="space-y-2">
@@ -139,7 +166,8 @@ export default function ProfilePage() {
               <div className="space-y-2">
                 <h3 className="text-lg font-medium">Delete Account</h3>
                 <p className="text-sm text-muted-foreground">
-                  Once you delete your account, there is no going back. Please be certain.
+                  Once you delete your account, there is no going back. Please
+                  be certain.
                 </p>
                 <Button variant="destructive">Delete Account</Button>
               </div>
@@ -151,24 +179,42 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>Manage how and when you receive notifications</CardDescription>
+              <CardDescription>
+                Manage how and when you receive notifications
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Email Notifications</h3>
                 <div className="space-y-2">
-                  {["donation_received", "fundraiser_updates", "goal_reached", "comments", "marketing"].map((item) => (
-                    <div key={item} className="flex items-center justify-between">
+                  {[
+                    "donation_received",
+                    "fundraiser_updates",
+                    "goal_reached",
+                    "comments",
+                    "marketing",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center justify-between"
+                    >
                       <Label htmlFor={item} className="flex-1">
                         {item
                           .split("_")
-                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1),
+                          )
                           .join(" ")}
                       </Label>
                       <input
                         type="checkbox"
                         id={item}
-                        defaultChecked={["donation_received", "fundraiser_updates", "goal_reached"].includes(item)}
+                        defaultChecked={[
+                          "donation_received",
+                          "fundraiser_updates",
+                          "goal_reached",
+                        ].includes(item)}
                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                       />
                     </div>
@@ -179,18 +225,31 @@ export default function ProfilePage() {
               <div className="space-y-4">
                 <h3 className="text-lg font-medium">Push Notifications</h3>
                 <div className="space-y-2">
-                  {["donation_received", "fundraiser_updates", "goal_reached"].map((item) => (
-                    <div key={`push_${item}`} className="flex items-center justify-between">
+                  {[
+                    "donation_received",
+                    "fundraiser_updates",
+                    "goal_reached",
+                  ].map((item) => (
+                    <div
+                      key={`push_${item}`}
+                      className="flex items-center justify-between"
+                    >
                       <Label htmlFor={`push_${item}`} className="flex-1">
                         {item
                           .split("_")
-                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .map(
+                            (word) =>
+                              word.charAt(0).toUpperCase() + word.slice(1),
+                          )
                           .join(" ")}
                       </Label>
                       <input
                         type="checkbox"
                         id={`push_${item}`}
-                        defaultChecked={["donation_received", "goal_reached"].includes(item)}
+                        defaultChecked={[
+                          "donation_received",
+                          "goal_reached",
+                        ].includes(item)}
                         className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
                       />
                     </div>
@@ -208,7 +267,9 @@ export default function ProfilePage() {
           <Card>
             <CardHeader>
               <CardTitle>Payment Methods</CardTitle>
-              <CardDescription>Manage your payment methods for donations and withdrawals</CardDescription>
+              <CardDescription>
+                Manage your payment methods for donations and withdrawals
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-4">
@@ -221,7 +282,9 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <div className="font-medium">Visa ending in 4242</div>
-                        <div className="text-xs text-muted-foreground">Expires 12/25</div>
+                        <div className="text-xs text-muted-foreground">
+                          Expires 12/25
+                        </div>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm">
@@ -246,7 +309,9 @@ export default function ProfilePage() {
                       </div>
                       <div>
                         <div className="font-medium">Bank Account</div>
-                        <div className="text-xs text-muted-foreground">Ending in 5678</div>
+                        <div className="text-xs text-muted-foreground">
+                          Ending in 5678
+                        </div>
                       </div>
                     </div>
                     <Button variant="ghost" size="sm">
@@ -261,5 +326,5 @@ export default function ProfilePage() {
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

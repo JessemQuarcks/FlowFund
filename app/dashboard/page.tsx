@@ -44,8 +44,8 @@ export default async function DashboardPage() {
           0,
           Math.ceil(
             (new Date(e.fundraiser.endDate).getTime() - Date.now()) /
-              (1000 * 60 * 60 * 24)
-          )
+              (1000 * 60 * 60 * 24),
+          ),
         )
       : 0,
   }));
@@ -155,18 +155,18 @@ export default async function DashboardPage() {
                             <span>
                               GH₵
                               {Number(
-                                event.fundraiser.raisedAmount
+                                event.fundraiser.raisedAmount,
                               ).toLocaleString()}{" "}
                               raised of GH₵
                               {Number(
-                                event.fundraiser.targetAmount
+                                event.fundraiser.targetAmount,
                               ).toLocaleString()}
                             </span>
                             <span className="font-medium text-primary-600">
                               {Math.round(
                                 (Number(event.fundraiser.raisedAmount) /
                                   Number(event.fundraiser.targetAmount)) *
-                                  100
+                                  100,
                               )}
                               %
                             </span>
@@ -302,8 +302,8 @@ export default async function DashboardPage() {
                             withdrawal.status === "COMPLETED"
                               ? "bg-green-100 text-green-800"
                               : withdrawal.status === "PENDING"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
                           }`}
                         >
                           {withdrawal.status.toLowerCase()}

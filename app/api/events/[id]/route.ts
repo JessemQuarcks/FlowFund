@@ -12,7 +12,7 @@ import { createEventSchema } from "@/schemas/event";
 // Fetch single event
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -56,7 +56,7 @@ export async function GET(
     console.error("Failed to fetch event:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -64,7 +64,7 @@ export async function GET(
 // Update event
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -127,10 +127,10 @@ export async function PUT(
                   resource_type: "auto",
                   public_id: publicId,
                 },
-                (error, result) => (error ? reject(error) : resolve(result!))
+                (error, result) => (error ? reject(error) : resolve(result!)),
               )
               .end(buffer);
-          }
+          },
         );
 
         imageInfo.newImageUrl = uploadResult.secure_url;
@@ -139,7 +139,7 @@ export async function PUT(
         console.error("Failed to upload image:", uploadError);
         return NextResponse.json(
           { message: "Failed to upload image" },
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -170,7 +170,7 @@ export async function PUT(
     console.error("Failed to update event:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -178,7 +178,7 @@ export async function PUT(
 // Delete event
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -191,7 +191,9 @@ export async function DELETE(
       where: { id },
       include: {
         fundraiser: {
-          include: { _count: { select: { donations: true, withdrawals: true } } },
+          include: {
+            _count: { select: { donations: true, withdrawals: true } },
+          },
         },
       },
     });
@@ -215,7 +217,7 @@ export async function DELETE(
           message:
             "This event has received donations and cannot be deleted. Contact support to close it.",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -231,7 +233,7 @@ export async function DELETE(
     if (event.fundraiser?.image) {
       try {
         await cloudinary.uploader.destroy(
-          extractPublicId(event.fundraiser.image)
+          extractPublicId(event.fundraiser.image),
         );
       } catch (deleteError) {
         console.error("Failed to delete image:", deleteError);
@@ -243,7 +245,7 @@ export async function DELETE(
     console.error("Failed to delete event:", error);
     return NextResponse.json(
       { message: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

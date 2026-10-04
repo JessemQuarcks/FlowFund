@@ -63,7 +63,7 @@ export default async function EventPage({
     ? Math.round(
         (Number(event.fundraiser.raisedAmount) /
           Number(event.fundraiser.targetAmount)) *
-          100
+          100,
       )
     : 0;
 
@@ -72,8 +72,8 @@ export default async function EventPage({
         0,
         Math.ceil(
           (new Date(event.fundraiser.endDate).getTime() - Date.now()) /
-            (1000 * 60 * 60 * 24)
-        )
+            (1000 * 60 * 60 * 24),
+        ),
       )
     : 0;
 
