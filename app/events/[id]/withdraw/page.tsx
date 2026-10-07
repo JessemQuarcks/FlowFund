@@ -25,6 +25,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { EventWithFundraiser } from "@/types";
 import { formatMoney, toMajorUnits } from "@/lib/money";
+import { availableToWithdraw, platformFee } from "@/lib/fees";
 
 type PayoutAccount = {
   id: string;
@@ -90,9 +91,13 @@ export default function WithdrawFundsPage({
 
   const fundraiser = event?.fundraiser;
   const currency = fundraiser?.currency ?? "GHS";
+  const feePesewas = fundraiser ? platformFee(fundraiser.raisedAmount) : 0;
   const availablePesewas = fundraiser
-    ? fundraiser.raisedAmount - fundraiser.totalWithdrawn
+    ? availableToWithdraw(fundraiser.raisedAmount, fundraiser.totalWithdrawn)
     : 0;
+  const hasEnded = fundraiser
+    ? new Date(fundraiser.endDate).getTime() <= Date.now()
+    : false;
 
   const handleAddAccount = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -226,11 +231,19 @@ export default function WithdrawFundsPage({
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-lg border p-4">
               <div className="text-sm text-muted-foreground">Total Raised</div>
               <div className="text-2xl font-bold">
                 {formatMoney(fundraiser.raisedAmount, currency)}
+              </div>
+            </div>
+            <div className="rounded-lg border p-4">
+              <div className="text-sm text-muted-foreground">
+                Platform fee (5%)
+              </div>
+              <div className="text-2xl font-bold">
+                {formatMoney(feePesewas, currency)}
               </div>
             </div>
             <div className="rounded-lg border p-4">
@@ -264,7 +277,16 @@ export default function WithdrawFundsPage({
             </Alert>
           )}
 
-          {availablePesewas <= 0 ? (
+          {!hasEnded ? (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Not yet available</AlertTitle>
+              <AlertDescription>
+                Funds can be withdrawn only after the fundraiser&apos;s end date
+                ({new Date(fundraiser.endDate).toLocaleDateString()}).
+              </AlertDescription>
+            </Alert>
+          ) : availablePesewas <= 0 ? (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No funds available</AlertTitle>

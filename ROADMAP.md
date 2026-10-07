@@ -142,7 +142,7 @@ Found and fixed along the way:
 
 Gate: on staging, the ledger reconciles to Paystack to the pesewa, and concurrent donation and withdrawal tests cannot double-count or overdraw.
 
-Open decisions settled (2026-10-07): custodial balance with transfers out (not subaccounts); a currency column now, defaulting to GHS.
+Open decisions settled (2026-10-07): custodial balance with transfers out (not subaccounts); a currency column now, defaulting to GHS; platform fee 5% of the money raised; payouts only after the fundraiser's end date.
 
 - [x] Migrate all amounts from `Float` to integer pesewas, with a data migration for existing rows (migration `20261007120000_money_in_pesewas`; added a `currency` column, default GHS; `lib/money.ts` is the only GHS↔pesewas boundary)
 - [x] Server-side `transaction/initialize` with a server-generated reference; metadata carries fundraiser ID, donor details and anonymity (`POST /api/donations/initialize`; the browser resumes the popup with the returned access code and no longer picks the amount, fundraiser or reference)
@@ -150,7 +150,7 @@ Open decisions settled (2026-10-07): custodial balance with transfers out (not s
 - [x] At donation time, require the fundraiser to be active, before its end date, and at or above its minimum (enforced in `initializeDonation`, before any money is captured)
 - [x] Payout accounts: users add a bank or mobile money account, verified with Paystack account resolution; store the `recipient_code` once with the correct recipient type (`PayoutAccount` model; `BANK_ACCOUNT`→`ghipss`, `MOBILE_MONEY`→`mobile_money`; `POST /api/payout-accounts`)
 - [x] Rewrite withdrawals: balance check and debit inside one transaction with a row lock (`SELECT … FOR UPDATE`), status starts `PENDING`, finalised by `transfer.success` / `transfer.failed` / `transfer.reversed` webhooks (`requestWithdrawal` reserves funds under the lock, then sends the transfer; `finalizeTransfer` settles idempotently and releases funds on failure/reversal; status lifecycle `PENDING → PROCESSING → COMPLETED / FAILED / REVERSED`)
-- [ ] Fee model: platform fee and Paystack fees shown to organisers; "available" means net of fees and holds — waits on the **platform fee** open decision; "available" is currently `raisedAmount − totalWithdrawn`
+- [x] Fee model: "available" means net of fees. Platform fee is 5% of the money raised (`lib/fees.ts`); `availableToWithdraw = raised − 5% − totalWithdrawn`, enforced in `requestWithdrawal` and shown on the withdraw page. Payout policy: withdrawals are allowed only after the fundraiser's end date. (Showing per-transaction Paystack fees is a smaller follow-up.)
 - [ ] Admin-initiated refunds and chargeback handling — waits on the admin console (Phase 4); the webhook and audit log are in place to build on
 - [x] Nightly reconciliation against Paystack transactions and transfers, with an alert on any drift — the comparison logic is done (`lib/services/reconciliation.ts`: counters vs the ledger, each donation and withdrawal vs Paystack to the pesewa; drift is logged and written to the audit log). Triggered by `POST /api/cron/reconcile` behind `CRON_SECRET`, so any scheduler can run it; **which** scheduler (and real alerting, Phase 5) waits on the **hosting** decision
 - [x] Append-only audit log for every money movement and admin action (`AuditLog` model; donation recording and every withdrawal state change write an entry inside the same transaction as the balance move, so the log can never disagree with the balances)

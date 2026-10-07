@@ -56,12 +56,21 @@ afterAll(async () => {
 });
 
 // A funded fundraiser owned by a fresh user, plus a verified payout account.
-async function fundedSetup(raisedPesewas: number) {
+// Ended by default, since payouts are only allowed after the end date.
+async function fundedSetup(
+  raisedPesewas: number,
+  { ended = true }: { ended?: boolean } = {},
+) {
   const user = await createUser();
   const event = await createEventWithFundraiser(user.id);
   await prisma.fundraiser.update({
     where: { id: event.fundraiser!.id },
-    data: { raisedAmount: raisedPesewas },
+    data: {
+      raisedAmount: raisedPesewas,
+      endDate: ended
+        ? new Date(Date.now() - 24 * 60 * 60 * 1000)
+        : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    },
   });
   const account = await addPayoutAccount(user.id, {
     accountType: "BANK_ACCOUNT",
@@ -148,6 +157,43 @@ describe("requestWithdrawal", () => {
       actorUserId: user.id,
       fundraiserId: fundraiser.id,
     });
+  });
+
+  it("refuses a withdrawal before the fundraiser's end date", async () => {
+    const { user, fundraiser, account } = await fundedSetup(10_000, {
+      ended: false,
+    });
+
+    await expect(
+      requestWithdrawal(user.id, {
+        fundraiserId: fundraiser.id,
+        payoutAccountId: account.id,
+        amount: 50,
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+    expect(await totalWithdrawn(fundraiser.id)).toBe(0);
+    expect(transfer).not.toHaveBeenCalled();
+  });
+
+  it("limits the available balance to the net of the 5% platform fee", async () => {
+    // Raised 10_000 → fee 500 → available 9_500.
+    const { user, fundraiser, account } = await fundedSetup(10_000);
+
+    await expect(
+      requestWithdrawal(user.id, {
+        fundraiserId: fundraiser.id,
+        payoutAccountId: account.id,
+        amount: 96, // 9_600 pesewas, over the net
+      }),
+    ).rejects.toMatchObject({ status: 400 });
+
+    const ok = await requestWithdrawal(user.id, {
+      fundraiserId: fundraiser.id,
+      payoutAccountId: account.id,
+      amount: 95, // 9_500 pesewas, exactly the net
+    });
+    expect(ok.amount).toBe(9_500);
+    expect(await totalWithdrawn(fundraiser.id)).toBe(9_500);
   });
 
   it("refuses to overdraw and leaves the balance untouched", async () => {

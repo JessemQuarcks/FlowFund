@@ -4,6 +4,7 @@ import { Prisma, type Withdrawal_Status } from "@/lib/generated/prisma";
 import { errors } from "@/lib/errors";
 import { initiateTransfer } from "@/lib/paystack";
 import { toMinorUnits } from "@/lib/money";
+import { availableToWithdraw } from "@/lib/fees";
 import { getOwnedPayoutAccount } from "@/lib/services/payout-accounts";
 import type { RequestWithdrawalInput } from "@/schemas/withdrawal";
 
@@ -77,6 +78,13 @@ export async function requestWithdrawal(
   if (!fundraiser) throw errors.notFound("Fundraiser not found");
   if (fundraiser.event.userId !== userId) throw errors.forbidden();
 
+  // Payout policy: funds can only be withdrawn once the fundraiser has ended.
+  if (fundraiser.endDate.getTime() > Date.now()) {
+    throw errors.badRequest(
+      "Funds can be withdrawn only after the fundraiser's end date",
+    );
+  }
+
   const payoutAccount = await getOwnedPayoutAccount(
     userId,
     input.payoutAccountId,
@@ -99,7 +107,11 @@ export async function requestWithdrawal(
       const current = rows[0];
       if (!current) throw errors.notFound("Fundraiser not found");
 
-      const available = current.raisedAmount - current.totalWithdrawn;
+      // Available is net of the platform fee, less what is already reserved.
+      const available = availableToWithdraw(
+        current.raisedAmount,
+        current.totalWithdrawn,
+      );
       if (amount > available) {
         throw errors.badRequest("Amount is more than the available balance");
       }
