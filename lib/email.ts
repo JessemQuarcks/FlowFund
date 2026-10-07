@@ -88,6 +88,39 @@ export function verifyEmailEmail(verifyUrl: string): EmailMessage["html"] {
   );
 }
 
+export function donationReceiptEmail(
+  eventTitle: string,
+  amount: string,
+): EmailMessage["html"] {
+  return layout(
+    "Thank you for your donation",
+    `<p>Your donation of <strong>${amount}</strong> to <strong>${escapeHtml(eventTitle)}</strong> was received.</p>
+     <p>Thank you for your support!</p>`,
+  );
+}
+
+export function newDonationAlertEmail(
+  eventTitle: string,
+  amount: string,
+  donorName: string,
+): EmailMessage["html"] {
+  return layout(
+    "You received a donation",
+    `<p><strong>${escapeHtml(donorName)}</strong> donated <strong>${amount}</strong> to <strong>${escapeHtml(eventTitle)}</strong>.</p>`,
+  );
+}
+
+export function payoutStatusEmail(
+  eventTitle: string,
+  amount: string,
+  status: string,
+): EmailMessage["html"] {
+  return layout(
+    `Payout ${status.toLowerCase()}`,
+    `<p>Your withdrawal of <strong>${amount}</strong> from <strong>${escapeHtml(eventTitle)}</strong> is now <strong>${escapeHtml(status.toLowerCase())}</strong>.</p>`,
+  );
+}
+
 export function contactEmail(input: {
   name: string;
   email: string;

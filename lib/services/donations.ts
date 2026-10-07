@@ -7,7 +7,12 @@ import {
   verifyTransaction,
   type PaystackTransaction,
 } from "@/lib/paystack";
-import { toMinorUnits } from "@/lib/money";
+import { formatMoney, toMinorUnits } from "@/lib/money";
+import {
+  donationReceiptEmail,
+  newDonationAlertEmail,
+  sendEmail,
+} from "@/lib/email";
 import type { InitializeDonationInput } from "@/schemas/donation";
 
 // What callers may see of a donation. Never return the stored Paystack
@@ -123,6 +128,39 @@ export async function initializeDonation(
   };
 }
 
+// Emails the donor a receipt (when not anonymous) and the organiser an alert.
+// Best-effort: failures are logged by the caller, never surfaced to the donor.
+async function notifyDonationRecorded(
+  eventId: string,
+  donation: { amount: number; currency: string },
+  donor: DonorDetails | null,
+) {
+  const event = await prisma.event.findUnique({
+    where: { id: eventId },
+    select: { title: true, user: { select: { email: true } } },
+  });
+  if (!event) return;
+  const amount = formatMoney(donation.amount, donation.currency);
+
+  if (donor?.email) {
+    await sendEmail({
+      to: donor.email,
+      subject: `Your donation to ${event.title}`,
+      html: donationReceiptEmail(event.title, amount),
+    });
+  }
+  if (event.user?.email) {
+    const donorName = donor
+      ? `${donor.firstName} ${donor.lastName}`
+      : "An anonymous donor";
+    await sendEmail({
+      to: event.user.email,
+      subject: `New donation to ${event.title}`,
+      html: newDonationAlertEmail(event.title, amount, donorName),
+    });
+  }
+}
+
 // Records the payment behind a reference against its fundraiser exactly once.
 // The amount, fundraiser and donor all come from Paystack (the verified
 // transaction and the server-set metadata), never from the caller. Safe to
@@ -235,7 +273,16 @@ export async function recordDonationByReference(
     // dropping the record.
     for (let attempt = 1; ; attempt++) {
       try {
-        return toPublic(await recordDonation());
+        const created = await recordDonation();
+        // Best-effort notifications, only on a fresh record.
+        await notifyDonationRecorded(
+          fundraiser.eventId,
+          { amount: created.amount, currency: created.currency },
+          donor,
+        ).catch((error) =>
+          console.error("Donation notification failed:", error),
+        );
+        return toPublic(created);
       } catch (error) {
         if (!isPrismaError(error, "P2034") || attempt >= 3) throw error;
       }

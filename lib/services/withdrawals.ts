@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma, type Withdrawal_Status } from "@/lib/generated/prisma";
 import { errors } from "@/lib/errors";
 import { initiateTransfer } from "@/lib/paystack";
-import { toMinorUnits } from "@/lib/money";
+import { formatMoney, toMinorUnits } from "@/lib/money";
+import { payoutStatusEmail, sendEmail } from "@/lib/email";
 import { availableToWithdraw } from "@/lib/fees";
 import { getOwnedPayoutAccount } from "@/lib/services/payout-accounts";
 import type { RequestWithdrawalInput } from "@/schemas/withdrawal";
@@ -196,9 +197,9 @@ export async function finalizeTransfer(
         ? "REVERSED"
         : "FAILED";
 
-  await prisma.$transaction(async (tx) => {
+  const changed = await prisma.$transaction(async (tx) => {
     const w = await tx.withdrawal.findUnique({ where: { reference } });
-    if (!w || w.status === target) return;
+    if (!w || w.status === target) return null;
 
     const wasReserved = RESERVED_STATES.has(w.status);
     const willReserve = RESERVED_STATES.has(target);
@@ -235,5 +236,51 @@ export async function finalizeTransfer(
         detail: { outcome, from: w.status, to: target },
       },
     });
+
+    return {
+      fundraiserId: w.fundraiserId,
+      userId: w.userId,
+      amount: w.amount,
+      currency: w.currency,
+    };
+  });
+
+  // Best-effort payout-status email to the organiser, only on a real change.
+  if (changed) {
+    await notifyPayoutStatus(changed, target).catch((error) =>
+      console.error("Payout notification failed:", error),
+    );
+  }
+}
+
+// Emails the organiser that a withdrawal reached a terminal status.
+async function notifyPayoutStatus(
+  withdrawal: {
+    fundraiserId: string;
+    userId: string;
+    amount: number;
+    currency: string;
+  },
+  status: Withdrawal_Status,
+) {
+  const [fundraiser, user] = await Promise.all([
+    prisma.fundraiser.findUnique({
+      where: { id: withdrawal.fundraiserId },
+      select: { event: { select: { title: true } } },
+    }),
+    prisma.user.findUnique({
+      where: { id: withdrawal.userId },
+      select: { email: true },
+    }),
+  ]);
+  if (!user?.email || !fundraiser?.event) return;
+  await sendEmail({
+    to: user.email,
+    subject: `Payout ${status.toLowerCase()} — ${fundraiser.event.title}`,
+    html: payoutStatusEmail(
+      fundraiser.event.title,
+      formatMoney(withdrawal.amount, withdrawal.currency),
+      status,
+    ),
   });
 }
