@@ -16,6 +16,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth"; // Adjust path as needed
 import { EventWithDaysLeft } from "@/types";
 import { formatMoney } from "@/lib/money";
+import { DeleteEventButton } from "@/components/delete-event-button";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -194,30 +195,24 @@ export default async function DashboardPage() {
                       </p>
                     )}
                   </CardContent>
-                  <CardFooter className="flex justify-between">
-                    <Link href={`/events/${event.id}/edit`}>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-primary-200 hover:bg-primary-50 hover:text-primary-700"
-                      >
-                        <Edit className="mr-2 h-4 w-4" /> Edit
-                      </Button>
-                    </Link>
+                  <CardFooter className="flex flex-wrap justify-between gap-2">
+                    <div className="flex gap-2">
+                      <Link href={`/events/${event.id}/edit`}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="border-primary-200 hover:bg-primary-50 hover:text-primary-700"
+                        >
+                          <Edit className="mr-2 h-4 w-4" /> Edit
+                        </Button>
+                      </Link>
+                      <DeleteEventButton eventId={event.id} />
+                    </div>
                     <Link href={`/events/${event.id}/withdraw`}>
                       <Button size="sm" variant="gradient-secondary">
                         Withdraw Funds
                       </Button>
                     </Link>
-                    {event.fundraiser &&
-                      Number(event.fundraiser.raisedAmount) >
-                        Number(event.fundraiser.totalWithdrawn) && (
-                        <Link href={`/events/${event.id}/withdraw`}>
-                          <Button size="sm" variant="gradient-secondary">
-                            Withdraw Funds
-                          </Button>
-                        </Link>
-                      )}
                   </CardFooter>
                 </Card>
               ))}

@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
 
 export default function CreateEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -50,7 +51,7 @@ export default function CreateEventPage() {
       router.push(`/events/${event.id}`);
     } catch (error) {
       console.error("Failed to create event:", error);
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Failed to create event. Please try again.",

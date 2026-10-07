@@ -4,6 +4,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SiteHeader } from "@/components/site-header";
+import { Toaster } from "@/components/ui/sonner";
 import { Providers } from "./providers";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -34,6 +35,7 @@ export default async function RootLayout({
           >
             <SiteHeader />
             {children}
+            <Toaster />
           </ThemeProvider>
         </Providers>
       </body>

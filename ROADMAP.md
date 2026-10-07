@@ -164,15 +164,15 @@ Gate: no screen shows sample data or a fake submit handler.
 - [x] Discover page: search, category, sort and goal range driven by URL search params, with pagination (`searchEvents` + `parseDiscoverParams`/`buildDiscoverWhere`; a `DiscoverFilters` client component writes the filters to the URL so results are shareable and server-rendered; 9 per page)
 - [x] Home page "featured" limited and curated instead of loading every event (`featuredEvents` returns the few most active current campaigns)
 - [x] Share button (Web Share API with copy-link fallback); per-event `generateMetadata` and Open Graph image (`ShareButton` component; the event page sets title/description/OG/Twitter tags from the event and its image)
-- [ ] Close / archive campaign UI (replace the empty `delete-event-button.tsx`)
+- [x] Close / archive campaign UI (replace the empty `delete-event-button.tsx`) — `DeleteEventButton` confirms and deletes an event with no donations; one with donations is refused by the API with a clear message. A full archive/status lifecycle (`DRAFT/ACTIVE/ENDED/SUSPENDED`) is Phase 4.
 - [x] Profile page that saves: name, avatar upload, password change (`/api/profile`, `/api/profile/avatar`, `/api/profile/password`; the page loads the real user and only a hasPassword boolean reaches the client; an OAuth-only account can set a first password)
 - [x] Email verification and a real password reset using the existing `VerificationToken` table (sign-up emails a confirmation link; `GET /api/auth/verify-email` marks the address verified; password reset done)
 - [x] Transactional email (Resend over its HTTP API, swappable; logs when unconfigured): donation receipt, new-donation alert, payout status, password reset and email verification — the money-path sends are best-effort and never break the transaction
 - [x] Contact form that sends email (`POST /api/contact` → `CONTACT_TO`/`EMAIL_FROM`; the page submits for real instead of a `setTimeout`)
 - [x] Dashboard "My donations" linked by `userId` when signed in (no longer matched by the email typed at checkout)
 - [x] Edit rules: lock target and minimum after the first donation; allow editing events whose date has passed (`updateEventSchema` permits past dates; `updateEvent` refuses a changed target/minimum once a donation exists)
-- [ ] Toasts instead of `alert()`; `error.tsx`, `not-found.tsx` and loading states; react-hook-form with shared schemas
-- [ ] GH₵ everywhere via one formatter (some screens show $ today)
+- [x] Toasts instead of `alert()`; `error.tsx`, `not-found.tsx` and loading states (sonner `Toaster` mounted; every `alert()` replaced with a toast; root `error.tsx` and `not-found.tsx` added; `events/loading.tsx` already present). react-hook-form migration is still outstanding — forms validate against the shared zod schemas on the server today.
+- [x] GH₵ everywhere via one formatter (`formatMoney`/`formatGHS`; no screen shows `$`)
 
 ## Phase 4 — Trust, safety and compliance (2–3 weeks of engineering; start the legal work now)
 

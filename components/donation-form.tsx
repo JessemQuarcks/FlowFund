@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { EventWithFundraiserAndUser } from "@/types";
 import { toMajorUnits } from "@/lib/money";
+import { toast } from "sonner";
 
 export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
   const [amount, setAmount] = useState<string>("");
@@ -56,7 +57,7 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
     e.preventDefault();
     if (!isClient || typeof window === "undefined") return;
     if (!event.fundraiser) {
-      alert("A fundraiser is yet to be created for this event.");
+      toast.error("A fundraiser is yet to be created for this event.");
       return;
     }
     setIsSubmitting(true);
@@ -83,7 +84,7 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
       if (!initResponse.ok) {
         const body = await initResponse.json().catch(() => null);
         setIsSubmitting(false);
-        alert(body?.message ?? "Could not start the donation");
+        toast.error(body?.message ?? "Could not start the donation");
         return;
       }
 
@@ -95,13 +96,13 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
         onSuccess: () => verifyPayment(reference),
         onCancel: () => {
           setIsSubmitting(false);
-          alert("Payment cancelled");
+          toast("Payment cancelled");
         },
       });
     } catch (error) {
       setIsSubmitting(false);
       console.error("Could not start the donation:", error);
-      alert("Could not start the donation. Please try again.");
+      toast.error("Could not start the donation. Please try again.");
       return;
     }
 
@@ -123,7 +124,7 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
           window.location.href = `/events/${eventId}/donate-success?${params.toString()}`;
         } else {
           setIsSubmitting(false);
-          alert("Payment verification failed");
+          toast.error("Payment verification failed");
         }
       } catch (error) {
         setIsSubmitting(false);
