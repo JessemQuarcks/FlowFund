@@ -22,6 +22,8 @@ type DonationMetadata = {
   fundraiser_id: string;
   is_anonymous: boolean;
   donor: DonorDetails | null;
+  // The signed-in user who donated, if any. Set by the server at initialise.
+  user_id?: string | null;
   event_title?: string;
 };
 
@@ -61,13 +63,17 @@ function readDonationMetadata(
     fundraiser_id: meta.fundraiser_id,
     is_anonymous: Boolean(meta.is_anonymous),
     donor,
+    user_id: typeof meta.user_id === "string" ? meta.user_id : null,
   };
 }
 
 // Starts a donation on the server: validates the fundraiser is still open and
 // the amount is allowed, then asks Paystack to initialise a transaction with a
 // server-generated reference and the donor details locked into the metadata.
-export async function initializeDonation(input: InitializeDonationInput) {
+export async function initializeDonation(
+  input: InitializeDonationInput,
+  userId?: string,
+) {
   const fundraiser = await prisma.fundraiser.findUnique({
     where: { id: input.fundraiserId },
     include: { event: { select: { title: true } } },
@@ -98,6 +104,7 @@ export async function initializeDonation(input: InitializeDonationInput) {
     fundraiser_id: fundraiser.id,
     is_anonymous: input.isAnonymous,
     donor,
+    user_id: userId ?? null,
     event_title: fundraiser.event.title,
   };
 
@@ -188,6 +195,8 @@ export async function recordDonationByReference(
             currency: fundraiser.currency,
             // Stored as received, for reconciliation.
             paymentDetails: paymentData as unknown as Prisma.InputJsonObject,
+            isAnonymous: metadata.is_anonymous,
+            userId: metadata.user_id ?? undefined,
             donorFirstName: donor?.firstName,
             donorLastName: donor?.lastName,
             donorEmail: donor?.email,
@@ -241,4 +250,70 @@ export async function recordDonationByReference(
     }
     throw error;
   }
+}
+
+// A donor as shown publicly on an event's Donors tab. Anonymity is honoured
+// here (no name) and the email is never exposed.
+export type PublicDonor = {
+  id: string;
+  name: string;
+  amount: number;
+  currency: string;
+  date: string;
+};
+
+export type DonorSort = "recent" | "highest" | "lowest";
+
+// Lists an event's donors, paginated, respecting each donation's anonymity.
+export async function listDonors(
+  eventId: string,
+  { page = 1, sort = "recent" }: { page?: number; sort?: DonorSort } = {},
+) {
+  const perPage = 10;
+  const safePage = Math.max(1, page);
+  const orderBy: Prisma.DonationOrderByWithRelationInput =
+    sort === "highest"
+      ? { amount: "desc" }
+      : sort === "lowest"
+        ? { amount: "asc" }
+        : { dateAdded: "desc" };
+  const where: Prisma.DonationWhereInput = { fundraiser: { eventId } };
+
+  const [rows, total] = await Promise.all([
+    prisma.donation.findMany({
+      where,
+      orderBy,
+      skip: (safePage - 1) * perPage,
+      take: perPage,
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        dateAdded: true,
+        isAnonymous: true,
+        donorFirstName: true,
+        donorLastName: true,
+      },
+    }),
+    prisma.donation.count({ where }),
+  ]);
+
+  const donors: PublicDonor[] = rows.map((r) => ({
+    id: r.id,
+    name: r.isAnonymous
+      ? "Anonymous"
+      : [r.donorFirstName, r.donorLastName].filter(Boolean).join(" ") ||
+        "Anonymous",
+    amount: r.amount,
+    currency: r.currency,
+    date: r.dateAdded.toISOString(),
+  }));
+
+  return {
+    donors,
+    total,
+    page: safePage,
+    perPage,
+    totalPages: Math.max(1, Math.ceil(total / perPage)),
+  };
 }

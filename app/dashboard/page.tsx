@@ -51,10 +51,11 @@ export default async function DashboardPage() {
       : 0,
   }));
 
-  // Fetch user's donations
+  // Fetch user's donations, linked by their account (set when a signed-in
+  // user donates), not by the email typed at checkout.
   const donations = await prisma.donation.findMany({
     where: {
-      donorEmail: session.user.email,
+      userId: session.user.id,
     },
     include: {
       fundraiser: {

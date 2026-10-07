@@ -159,7 +159,7 @@ Open decisions settled (2026-10-07): custodial balance with transfers out (not s
 
 Gate: no screen shows sample data or a fake submit handler.
 
-- [ ] Donors tab from real donations, respecting anonymity, paginated
+- [x] Donors tab from real donations, respecting anonymity, paginated (`listDonors` + `GET /api/events/[id]/donors`; anonymous gifts show as "Anonymous" and the email is never exposed; `Donation.userId`/`isAnonymous` added, captured from the session at initialise)
 - [ ] Campaign updates: an `Update` model, organiser posting UI, list on the event page
 - [x] Discover page: search, category, sort and goal range driven by URL search params, with pagination (`searchEvents` + `parseDiscoverParams`/`buildDiscoverWhere`; a `DiscoverFilters` client component writes the filters to the URL so results are shareable and server-rendered; 9 per page)
 - [x] Home page "featured" limited and curated instead of loading every event (`featuredEvents` returns the few most active current campaigns)
@@ -169,7 +169,7 @@ Gate: no screen shows sample data or a fake submit handler.
 - [ ] Email verification and a real password reset using the existing `VerificationToken` table
 - [ ] Transactional email (Resend or Postmark): donation receipt, new-donation alert, payout status, password reset
 - [ ] Contact form that sends email or creates a ticket
-- [ ] Dashboard "My donations" linked by `userId` when signed in
+- [x] Dashboard "My donations" linked by `userId` when signed in (no longer matched by the email typed at checkout)
 - [ ] Edit rules: lock target and minimum after the first donation; allow editing events whose date has passed
 - [ ] Toasts instead of `alert()`; `error.tsx`, `not-found.tsx` and loading states; react-hook-form with shared schemas
 - [ ] GH₵ everywhere via one formatter (some screens show $ today)

@@ -56,6 +56,7 @@ model User {
   events Event[]
   withdrawals Withdrawal[]
   payoutAccounts PayoutAccount[]
+  donations Donation[]
 }
 
 model VerificationToken {
@@ -125,12 +126,22 @@ model Donation {
   currency String @default("GHS")
   fundraiserId String
   fundraiser Fundraiser @relation(fields: [fundraiserId], references: [id])
+  // Set when a signed-in user donated, so "My donations" can link by user
+  // rather than by the typed email.
+  userId String?
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  // Per-donation choice: an anonymous gift stores no donor name or email and
+  // is shown as "Anonymous".
+  isAnonymous Boolean @default(false)
   donorFirstName String?
   donorLastName String?
   donorEmail String?
   paymentDetails Json
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
+
+  @@index([userId])
+  @@index([fundraiserId])
 }
 
 model Withdrawal {

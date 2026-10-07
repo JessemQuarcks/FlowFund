@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { readJson, withErrorHandling } from "@/lib/api";
 import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
 import { initializeDonation } from "@/lib/services/donations";
@@ -14,6 +16,9 @@ export const POST = withErrorHandling(async (request: Request) => {
     10 * 60 * 1000,
   );
   const input = initializeDonationSchema.parse(await readJson(request));
-  const result = await initializeDonation(input);
+  // Link the donation to the donor when they are signed in. The id comes from
+  // the session, never the request body.
+  const session = await getServerSession(authOptions);
+  const result = await initializeDonation(input, session?.user?.id);
   return NextResponse.json({ success: true, ...result });
 });

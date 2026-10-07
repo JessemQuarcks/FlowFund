@@ -8,6 +8,7 @@ import {
 } from "@/lib/paystack";
 import {
   initializeDonation,
+  listDonors,
   recordDonationByReference,
 } from "@/lib/services/donations";
 import {
@@ -43,11 +44,13 @@ function paystackSuccess(
   {
     amount = 5_000,
     donor: who = null as Donor | null,
+    userId = null as string | null,
     currency = "GHS",
     ...dataOverrides
   }: {
     amount?: number;
     donor?: Donor | null;
+    userId?: string | null;
     currency?: string;
     status?: string;
     reference?: string;
@@ -65,6 +68,7 @@ function paystackSuccess(
         fundraiser_id: fundraiserId,
         is_anonymous: !who,
         donor: who,
+        user_id: userId,
       },
       ...dataOverrides,
     } as PaystackVerifyResponse["data"],
@@ -75,7 +79,11 @@ function paystackSuccess(
 // does after a successful popup.
 function give(
   fundraiserId: string,
-  options: { amount?: number; donor?: Donor | null } = {},
+  options: {
+    amount?: number;
+    donor?: Donor | null;
+    userId?: string | null;
+  } = {},
 ) {
   const reference = `ff_${randomUUID()}`;
   payments.set(reference, paystackSuccess(reference, fundraiserId, options));
@@ -320,5 +328,95 @@ describe("recordDonationByReference", () => {
       raisedAmount: 12_500,
       donorCount: 5,
     });
+  });
+
+  it("links the donation to the signed-in user and records anonymity", async () => {
+    const fundraiser = await setup();
+    const user = await createUser("donor-account@example.com");
+    const reference = `ff_${randomUUID()}`;
+    payments.set(
+      reference,
+      paystackSuccess(reference, fundraiser.id, {
+        donor: null, // anonymous
+        userId: user.id,
+      }),
+    );
+
+    const result = await recordDonationByReference(reference);
+
+    const saved = await prisma.donation.findUniqueOrThrow({
+      where: { id: result.id },
+    });
+    expect(saved.userId).toBe(user.id);
+    expect(saved.isAnonymous).toBe(true);
+    // Anonymous: no donor name stored.
+    expect(saved.donorFirstName).toBeNull();
+  });
+});
+
+describe("initializeDonation user linkage", () => {
+  it("puts the signed-in user's id in the metadata", async () => {
+    const fundraiser = await setup();
+    paystackInit.mockResolvedValue({
+      authorization_url: "u",
+      access_code: "AC",
+      reference: "",
+    });
+
+    await initializeDonation(
+      {
+        fundraiserId: fundraiser.id,
+        amount: 50,
+        isAnonymous: false,
+        email: "kofi@example.com",
+        firstName: "Kofi",
+        lastName: "Mensah",
+      },
+      "user-123",
+    );
+
+    expect(paystackInit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ user_id: "user-123" }),
+      }),
+    );
+  });
+});
+
+describe("listDonors", () => {
+  it("lists donors, hides anonymous names, and never exposes the email", async () => {
+    const fundraiser = await setup();
+    await give(fundraiser.id, {
+      amount: 3_000,
+      donor: donor("ama@example.com"),
+    });
+    await give(fundraiser.id, { amount: 9_000, donor: null }); // anonymous
+
+    const { donors, total } = await listDonors(fundraiser.eventId, {
+      sort: "highest",
+    });
+
+    expect(total).toBe(2);
+    expect(donors[0]).toMatchObject({ name: "Anonymous", amount: 9_000 });
+    expect(donors[1]).toMatchObject({ name: "Kofi Mensah", amount: 3_000 });
+    for (const d of donors) {
+      expect(Object.keys(d)).not.toContain("email");
+      expect(Object.keys(d)).not.toContain("donorEmail");
+    }
+  });
+
+  it("paginates", async () => {
+    const fundraiser = await setup();
+    for (let i = 0; i < 12; i++) {
+      await give(fundraiser.id, { donor: donor(`d${i}@example.com`) });
+    }
+
+    const first = await listDonors(fundraiser.eventId, { page: 1 });
+    expect(first.donors).toHaveLength(10);
+    expect(first.total).toBe(12);
+    expect(first.totalPages).toBe(2);
+
+    const second = await listDonors(fundraiser.eventId, { page: 2 });
+    expect(second.donors).toHaveLength(2);
   });
 });

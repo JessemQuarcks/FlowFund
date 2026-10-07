@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -16,91 +16,60 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { formatMoney } from "@/lib/money";
+
+type Donor = {
+  id: string;
+  name: string;
+  amount: number;
+  currency: string;
+  date: string;
+};
+
+type Sort = "recent" | "highest" | "lowest";
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return (
+    (parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts[1][0] ?? "") : "")
+  ).toUpperCase();
+}
+
+function relativeDate(iso: string) {
+  return new Date(iso).toLocaleDateString();
+}
 
 export function DonorsList({ eventId }: { eventId: string }) {
-  const [sortBy, setSortBy] = useState("recent");
+  const [sortBy, setSortBy] = useState<Sort>("recent");
+  const [page, setPage] = useState(1);
+  const [donors, setDonors] = useState<Donor[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // In a real app, this would be fetched from an API
-  const donors = [
-    {
-      id: "1",
-      name: "John Doe",
-      amount: 50,
-      date: "2 hours ago",
-      initials: "JD",
-    },
-    {
-      id: "2",
-      name: "Anonymous Supporter",
-      amount: 100,
-      date: "5 hours ago",
-      initials: "AS",
-    },
-    {
-      id: "3",
-      name: "Maria Smith",
-      amount: 25,
-      date: "1 day ago",
-      initials: "MS",
-    },
-    {
-      id: "4",
-      name: "Robert Johnson",
-      amount: 200,
-      date: "2 days ago",
-      initials: "RJ",
-    },
-    {
-      id: "5",
-      name: "Anonymous Supporter",
-      amount: 75,
-      date: "3 days ago",
-      initials: "AS",
-    },
-    {
-      id: "6",
-      name: "Emily Davis",
-      amount: 150,
-      date: "4 days ago",
-      initials: "ED",
-    },
-    {
-      id: "7",
-      name: "Michael Brown",
-      amount: 50,
-      date: "5 days ago",
-      initials: "MB",
-    },
-    {
-      id: "8",
-      name: "Sarah Wilson",
-      amount: 300,
-      date: "1 week ago",
-      initials: "SW",
-    },
-    {
-      id: "9",
-      name: "Anonymous Supporter",
-      amount: 25,
-      date: "1 week ago",
-      initials: "AS",
-    },
-    {
-      id: "10",
-      name: "David Miller",
-      amount: 100,
-      date: "2 weeks ago",
-      initials: "DM",
-    },
-  ];
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    fetch(`/api/events/${eventId}/donors?sort=${sortBy}&page=${page}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((body) => {
+        if (!active || !body) return;
+        setDonors(body.donors ?? []);
+        setTotalPages(body.totalPages ?? 1);
+        setTotal(body.total ?? 0);
+      })
+      .catch(() => {})
+      .finally(() => active && setLoading(false));
+    return () => {
+      active = false;
+    };
+  }, [eventId, sortBy, page]);
 
-  // Sort donors based on selected option
-  const sortedDonors = [...donors].sort((a, b) => {
-    if (sortBy === "highest") return b.amount - a.amount;
-    if (sortBy === "lowest") return a.amount - b.amount;
-    // Default: recent
-    return 0; // In a real app, would sort by date
-  });
+  const changeSort = (value: string) => {
+    setSortBy(value as Sort);
+    setPage(1);
+  };
 
   return (
     <Card>
@@ -108,10 +77,12 @@ export function DonorsList({ eventId }: { eventId: string }) {
         <div>
           <CardTitle>Donors</CardTitle>
           <CardDescription>
-            People who have supported this fundraiser
+            {total === 0
+              ? "People who have supported this fundraiser"
+              : `${total} ${total === 1 ? "donation" : "donations"}`}
           </CardDescription>
         </div>
-        <Select value={sortBy} onValueChange={setSortBy}>
+        <Select value={sortBy} onValueChange={changeSort}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
@@ -123,27 +94,69 @@ export function DonorsList({ eventId }: { eventId: string }) {
         </Select>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {sortedDonors.map((donor) => (
-            <div
-              key={donor.id}
-              className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
-            >
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10">
-                  <AvatarFallback>{donor.initials}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="font-medium">{donor.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {donor.date}
+        {loading ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            Loading donors…
+          </p>
+        ) : donors.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8 text-center">
+            No donations yet. Be the first to give!
+          </p>
+        ) : (
+          <>
+            <div className="space-y-4">
+              {donors.map((donor) => (
+                <div
+                  key={donor.id}
+                  className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback>
+                        {donor.name === "Anonymous"
+                          ? "?"
+                          : initials(donor.name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <div className="font-medium">{donor.name}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {relativeDate(donor.date)}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="font-medium text-primary-600">
+                    {formatMoney(donor.amount, donor.currency)}
                   </div>
                 </div>
-              </div>
-              <div className="font-medium">${donor.amount}</div>
+              ))}
             </div>
-          ))}
-        </div>
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 pt-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Page {page} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
+        )}
       </CardContent>
     </Card>
   );
