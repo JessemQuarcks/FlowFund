@@ -161,8 +161,8 @@ Gate: no screen shows sample data or a fake submit handler.
 
 - [ ] Donors tab from real donations, respecting anonymity, paginated
 - [ ] Campaign updates: an `Update` model, organiser posting UI, list on the event page
-- [ ] Discover page: search, category, sort and goal range driven by URL search params, with pagination
-- [ ] Home page "featured" limited and curated instead of loading every event
+- [x] Discover page: search, category, sort and goal range driven by URL search params, with pagination (`searchEvents` + `parseDiscoverParams`/`buildDiscoverWhere`; a `DiscoverFilters` client component writes the filters to the URL so results are shareable and server-rendered; 9 per page)
+- [x] Home page "featured" limited and curated instead of loading every event (`featuredEvents` returns the few most active current campaigns)
 - [ ] Share button (Web Share API with copy-link fallback); per-event `generateMetadata` and Open Graph image
 - [ ] Close / archive campaign UI (replace the empty `delete-event-button.tsx`)
 - [ ] Profile page that saves: name, avatar upload, password change

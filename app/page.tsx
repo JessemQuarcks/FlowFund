@@ -10,19 +10,16 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { MoveRight, TrendingUp, Users } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { EventWithDaysLeft } from "@/types";
 import { formatMoney } from "@/lib/money";
+import { featuredEvents } from "@/lib/services/events";
 
 export default async function Home() {
-  // Await the database query to get the actual array
-  const featuredEvents = await prisma.event.findMany({
-    include: {
-      fundraiser: true,
-    },
-  });
+  // A small, curated set — the most active current campaigns — not every
+  // event in the database.
+  const featured = await featuredEvents(3);
 
-  const events: EventWithDaysLeft[] = featuredEvents.map((e) => ({
+  const events: EventWithDaysLeft[] = featured.map((e) => ({
     ...e,
     daysLeft: e.fundraiser?.endDate
       ? Math.max(
