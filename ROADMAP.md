@@ -142,10 +142,12 @@ Found and fixed along the way:
 
 Gate: on staging, the ledger reconciles to Paystack to the pesewa, and concurrent donation and withdrawal tests cannot double-count or overdraw.
 
-- [ ] Migrate all amounts from `Float` to integer pesewas, with a data migration for existing rows
-- [ ] Server-side `transaction/initialize` with a server-generated reference; metadata carries fundraiser ID, donor details and anonymity
-- [ ] Paystack webhook route: verify the `x-paystack-signature` HMAC-SHA512, process idempotently, treat `charge.success` as the source of truth
-- [ ] At donation time, require the fundraiser to be active, before its end date, and at or above its minimum
+Open decisions settled (2026-10-07): custodial balance with transfers out (not subaccounts); a currency column now, defaulting to GHS.
+
+- [x] Migrate all amounts from `Float` to integer pesewas, with a data migration for existing rows (migration `20261007120000_money_in_pesewas`; added a `currency` column, default GHS; `lib/money.ts` is the only GHS↔pesewas boundary)
+- [x] Server-side `transaction/initialize` with a server-generated reference; metadata carries fundraiser ID, donor details and anonymity (`POST /api/donations/initialize`; the browser resumes the popup with the returned access code and no longer picks the amount, fundraiser or reference)
+- [x] Paystack webhook route: verify the `x-paystack-signature` HMAC-SHA512, process idempotently, treat `charge.success` as the source of truth (`POST /api/webhooks/paystack`; the client `/verify` call and the webhook share one idempotent recorder keyed by the unique reference)
+- [x] At donation time, require the fundraiser to be active, before its end date, and at or above its minimum (enforced in `initializeDonation`, before any money is captured)
 - [ ] Payout accounts: users add a bank or mobile money account, verified with Paystack account resolution; store the `recipient_code` once with the correct recipient type
 - [ ] Rewrite withdrawals: balance check and debit inside one transaction with a row lock (`SELECT … FOR UPDATE`), status starts `PENDING`, finalised by `transfer.success` / `transfer.failed` / `transfer.reversed` webhooks
 - [ ] Fee model: platform fee and Paystack fees shown to organisers; "available" means net of fees and holds

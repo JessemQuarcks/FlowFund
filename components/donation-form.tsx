@@ -63,58 +63,57 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
 
     const finalAmount = amount === "custom" ? customAmount : amount;
 
-    const PayStackPop = (await import("@paystack/inline-js")).default;
+    try {
+      // The server sets the amount, fundraiser, reference and donor metadata,
+      // then returns the access code the popup resumes with. The browser never
+      // chooses any of those.
+      const initResponse = await fetch("/api/donations/initialize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fundraiserId: event.fundraiser.id,
+          amount: parseFloat(finalAmount),
+          isAnonymous,
+          email: donorInfo.email,
+          firstName: isAnonymous ? undefined : donorInfo.firstName,
+          lastName: isAnonymous ? undefined : donorInfo.lastName,
+        }),
+      });
 
-    // Paystack accepts any metadata keys; the @types package only lists
-    // custom_fields, so build the object outside the call.
-    const metadata = {
-      // The server checks this matches the fundraiser being credited.
-      fundraiser_id: event.fundraiser.id,
-      custom_fields: [
-        {
-          display_name: "Event Title",
-          variable_name: "event_title",
-          value: event.title,
-        },
-        {
-          display_name: "Donor Name",
-          variable_name: "donor_name",
-          value: isAnonymous
-            ? "Anonymous"
-            : `${donorInfo.firstName} ${donorInfo.lastName}`,
-        },
-      ],
-    };
-
-    const popUp = new PayStackPop();
-    popUp.newTransaction({
-      key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!,
-      amount: Math.round(parseFloat(finalAmount) * 100), // Convert to pesewas
-      currency: "GHS",
-      email: donorInfo.email,
-      reference: `donation_${crypto.randomUUID()}`,
-      metadata,
-      onSuccess: (transaction) => verifyPayment(transaction.reference),
-      onCancel: () => {
+      if (!initResponse.ok) {
+        const body = await initResponse.json().catch(() => null);
         setIsSubmitting(false);
-        alert("Payment cancelled");
-      },
-    });
+        alert(body?.message ?? "Could not start the donation");
+        return;
+      }
+
+      const { accessCode, reference } = await initResponse.json();
+
+      const PayStackPop = (await import("@paystack/inline-js")).default;
+      const popUp = new PayStackPop();
+      popUp.resumeTransaction(accessCode, {
+        onSuccess: () => verifyPayment(reference),
+        onCancel: () => {
+          setIsSubmitting(false);
+          alert("Payment cancelled");
+        },
+      });
+    } catch (error) {
+      setIsSubmitting(false);
+      console.error("Could not start the donation:", error);
+      alert("Could not start the donation. Please try again.");
+      return;
+    }
 
     const verifyPayment = async (reference: string) => {
       try {
         const response = await fetch("/api/donations/verify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            reference,
-            fundraiserId: event.fundraiser?.id,
-            donorInfo: isAnonymous ? null : donorInfo,
-          }),
+          body: JSON.stringify({ reference }),
         });
 
         if (response.ok) {
-          alert("Donation successful! Thank you for your contribution.");
           const params = new URLSearchParams({
             amount: finalAmount,
             eventId: event.id,

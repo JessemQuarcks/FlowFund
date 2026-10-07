@@ -1,27 +1,32 @@
+import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma";
 import { errors } from "@/lib/errors";
-import { verifyTransaction } from "@/lib/paystack";
-import type { VerifyDonationInput } from "@/schemas/donation";
+import {
+  initializeTransaction,
+  verifyTransaction,
+  type PaystackTransaction,
+} from "@/lib/paystack";
+import { toMinorUnits } from "@/lib/money";
+import type { InitializeDonationInput } from "@/schemas/donation";
 
 // What callers may see of a donation. Never return the stored Paystack
 // payload: it holds the card authorization.
 export type PublicDonation = { id: string; amount: number };
 
+// What the server writes into Paystack metadata when it starts a transaction,
+// and reads back when it records the donation. The amount, fundraiser and
+// donor are fixed here by the server, never trusted from the browser later.
+type DonorDetails = { firstName: string; lastName: string; email: string };
+type DonationMetadata = {
+  fundraiser_id: string;
+  is_anonymous: boolean;
+  donor: DonorDetails | null;
+  event_title?: string;
+};
+
 function toPublic(donation: { id: string; amount: number }): PublicDonation {
   return { id: donation.id, amount: donation.amount };
-}
-
-// A reference is recorded once. Repeat calls (client retries) get the
-// existing donation back instead of adding to the total again.
-function alreadyRecorded(
-  donation: { id: string; amount: number; fundraiserId: string },
-  fundraiserId: string,
-): PublicDonation {
-  if (donation.fundraiserId !== fundraiserId) {
-    throw errors.conflict("Payment reference already used");
-  }
-  return toPublic(donation);
 }
 
 function isPrismaError(error: unknown, ...codes: string[]) {
@@ -31,15 +36,96 @@ function isPrismaError(error: unknown, ...codes: string[]) {
   );
 }
 
-// Confirms a payment with Paystack and records it against the fundraiser
-// exactly once.
-export async function recordVerifiedDonation({
-  reference,
-  fundraiserId,
-  donorInfo,
-}: VerifyDonationInput): Promise<PublicDonation> {
+// Paystack returns metadata as the object we sent, but may deliver it as a JSON
+// string. Reads back the fields the server set; returns null if they are
+// missing or malformed (a payment we cannot attribute).
+function readDonationMetadata(
+  raw: PaystackTransaction["metadata"],
+): DonationMetadata | null {
+  let value: unknown = raw;
+  if (typeof raw === "string") {
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  if (!value || typeof value !== "object") return null;
+  const meta = value as Record<string, unknown>;
+  if (typeof meta.fundraiser_id !== "string") return null;
+  const donor =
+    meta.donor && typeof meta.donor === "object"
+      ? (meta.donor as DonorDetails)
+      : null;
+  return {
+    fundraiser_id: meta.fundraiser_id,
+    is_anonymous: Boolean(meta.is_anonymous),
+    donor,
+  };
+}
+
+// Starts a donation on the server: validates the fundraiser is still open and
+// the amount is allowed, then asks Paystack to initialise a transaction with a
+// server-generated reference and the donor details locked into the metadata.
+export async function initializeDonation(input: InitializeDonationInput) {
+  const fundraiser = await prisma.fundraiser.findUnique({
+    where: { id: input.fundraiserId },
+    include: { event: { select: { title: true } } },
+  });
+  if (!fundraiser) throw errors.notFound("Fundraiser not found");
+
+  if (fundraiser.endDate.getTime() <= Date.now()) {
+    throw errors.badRequest("This fundraiser has ended");
+  }
+
+  const amount = toMinorUnits(input.amount);
+  if (amount < fundraiser.minimumAmount) {
+    throw errors.badRequest(
+      "Donation is below the minimum for this fundraiser",
+    );
+  }
+
+  const reference = `ff_${randomUUID()}`;
+  const donor: DonorDetails | null =
+    input.isAnonymous || !input.firstName || !input.lastName
+      ? null
+      : {
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+        };
+  const metadata: DonationMetadata = {
+    fundraiser_id: fundraiser.id,
+    is_anonymous: input.isAnonymous,
+    donor,
+    event_title: fundraiser.event.title,
+  };
+
+  const { access_code, authorization_url } = await initializeTransaction({
+    email: input.email,
+    amount,
+    currency: fundraiser.currency,
+    reference,
+    metadata,
+  });
+
+  return {
+    reference,
+    accessCode: access_code,
+    authorizationUrl: authorization_url,
+  };
+}
+
+// Records the payment behind a reference against its fundraiser exactly once.
+// The amount, fundraiser and donor all come from Paystack (the verified
+// transaction and the server-set metadata), never from the caller. Safe to
+// call more than once and from more than one source (the client confirmation
+// and the webhook both land here); the unique reference keeps it idempotent.
+export async function recordDonationByReference(
+  reference: string,
+): Promise<PublicDonation> {
   const existing = await prisma.donation.findUnique({ where: { reference } });
-  if (existing) return alreadyRecorded(existing, fundraiserId);
+  if (existing) return toPublic(existing);
 
   const paymentData = await verifyTransaction(reference);
   const payment = paymentData?.data;
@@ -47,35 +133,32 @@ export async function recordVerifiedDonation({
     throw errors.paymentFailed("Payment verification failed");
   }
 
-  const metadata =
-    payment.metadata && typeof payment.metadata === "object"
-      ? payment.metadata
-      : {};
-  if (
-    payment.reference !== reference ||
-    metadata.fundraiser_id !== fundraiserId
-  ) {
-    throw errors.paymentFailed("Payment does not match this fundraiser");
+  const metadata = readDonationMetadata(payment.metadata);
+  if (!metadata || payment.reference !== reference) {
+    throw errors.paymentFailed("Payment metadata is missing or invalid");
   }
 
   const fundraiser = await prisma.fundraiser.findUnique({
-    where: { id: fundraiserId },
+    where: { id: metadata.fundraiser_id },
   });
   if (!fundraiser) throw errors.notFound("Fundraiser not found");
 
   // Paystack reports the amount in the currency's minor unit (pesewas for
   // GHS), which is exactly how we store it.
   if (payment.currency !== fundraiser.currency) {
-    throw errors.paymentFailed("Payment does not match this fundraiser");
+    throw errors.paymentFailed(
+      "Payment currency does not match the fundraiser",
+    );
   }
   const amount = payment.amount;
+  const donor = metadata.is_anonymous ? null : metadata.donor;
 
-  // The money has already been captured, so a below-minimum payment is
-  // still recorded. The donation form enforces the minimum; server-side
-  // enforcement needs server-initialised transactions (roadmap Phase 2).
+  // The minimum is enforced before the money is taken (initializeDonation);
+  // this only flags a payment that somehow arrived below it, which we still
+  // record because the money has already been captured.
   if (amount < fundraiser.minimumAmount) {
     console.warn(
-      `Donation ${reference} of ${amount} is below the minimum of ${fundraiser.minimumAmount} for fundraiser ${fundraiserId}`,
+      `Donation ${reference} of ${amount} is below the minimum of ${fundraiser.minimumAmount} for fundraiser ${fundraiser.id}`,
     );
   }
 
@@ -86,15 +169,15 @@ export async function recordVerifiedDonation({
         // fundraiser queue up instead of deadlocking (the donation insert's
         // foreign key check would otherwise share-lock it first).
         await tx.fundraiser.update({
-          where: { id: fundraiserId },
+          where: { id: fundraiser.id },
           data: { raisedAmount: { increment: amount } },
         });
 
         // Anonymous donations always count as a new donor; named donors are
         // counted once per fundraiser by email.
-        const isNewDonor = donorInfo?.email
+        const isNewDonor = donor?.email
           ? (await tx.donation.count({
-              where: { fundraiserId, donorEmail: donorInfo.email },
+              where: { fundraiserId: fundraiser.id, donorEmail: donor.email },
             })) === 0
           : true;
 
@@ -105,16 +188,16 @@ export async function recordVerifiedDonation({
             currency: fundraiser.currency,
             // Stored as received, for reconciliation.
             paymentDetails: paymentData as unknown as Prisma.InputJsonObject,
-            donorFirstName: donorInfo?.firstName,
-            donorLastName: donorInfo?.lastName,
-            donorEmail: donorInfo?.email,
-            fundraiserId,
+            donorFirstName: donor?.firstName,
+            donorLastName: donor?.lastName,
+            donorEmail: donor?.email,
+            fundraiserId: fundraiser.id,
           },
         });
 
         if (isNewDonor) {
           await tx.fundraiser.update({
-            where: { id: fundraiserId },
+            where: { id: fundraiser.id },
             data: { donorCount: { increment: 1 } },
           });
         }
@@ -137,12 +220,12 @@ export async function recordVerifiedDonation({
       }
     }
   } catch (error) {
-    // Two concurrent requests for the same reference: the unique index lets
-    // only one insert through (P2002), or MySQL resolves the clash as a
-    // deadlock (P2034). Either way the winner's record is returned.
+    // Two concurrent calls for the same reference: the unique index lets only
+    // one insert through (P2002), or MySQL resolves the clash as a deadlock
+    // (P2034). Either way the winner's record is returned.
     if (isPrismaError(error, "P2002", "P2034")) {
       const winner = await prisma.donation.findUnique({ where: { reference } });
-      if (winner) return alreadyRecorded(winner, fundraiserId);
+      if (winner) return toPublic(winner);
     }
     throw error;
   }
