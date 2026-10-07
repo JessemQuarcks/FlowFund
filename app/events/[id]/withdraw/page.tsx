@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useState, useEffect, use } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,124 +12,171 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { EventWithFundraiser } from "@/types";
+import { formatMoney, toMajorUnits } from "@/lib/money";
 
-export default function WithdrawFundsPage() {
-  const params = useParams();
+type PayoutAccount = {
+  id: string;
+  accountType: "BANK_ACCOUNT" | "MOBILE_MONEY";
+  bankName: string | null;
+  accountNumber: string;
+  accountName: string;
+};
+
+export default function WithdrawFundsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = use(params);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [event, setEvent] = useState<EventWithFundraiser | null>(null);
-  const [withdrawalMethod, setWithdrawalMethod] = useState("bank");
+  const [accounts, setAccounts] = useState<PayoutAccount[]>([]);
+  const [selectedAccount, setSelectedAccount] = useState<string>("");
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
+  const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [totalWithdrawn, setTotalWithdrawn] = useState(0); // Added since it's not in API response
+  const [success, setSuccess] = useState<string | null>(null);
+
+  // New-account form.
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [newType, setNewType] = useState<"bank" | "mobile">("bank");
+  const [bankCode, setBankCode] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [addingAccount, setAddingAccount] = useState(false);
+
+  async function loadAccounts() {
+    const res = await fetch("/api/payout-accounts");
+    if (res.ok) {
+      const body = await res.json();
+      setAccounts(body.accounts ?? []);
+      if (body.accounts?.[0] && !selectedAccount) {
+        setSelectedAccount(body.accounts[0].id);
+      }
+    }
+  }
 
   useEffect(() => {
-    const fetchEvent = async () => {
+    async function load() {
       try {
         setIsLoading(true);
-        const response = await fetch(`/api/events/${params.id}`);
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch event");
-        }
-
-        const eventData = await response.json();
-        setEvent(eventData);
-
-        // You might want to fetch totalWithdrawn separately if needed
-        // const withdrawalResponse = await fetch(`/api/events/${params.id}/withdrawals`)
-        // setTotalWithdrawn(withdrawalResponse.total || 0)
-      } catch (error) {
-        console.error("Error fetching event:", error);
+        const response = await fetch(`/api/events/${id}`);
+        if (!response.ok) throw new Error("Failed to fetch event");
+        const { data }: { data: EventWithFundraiser } = await response.json();
+        setEvent(data);
+        await loadAccounts();
+      } catch (err) {
+        console.error("Error loading withdrawal page:", err);
         setError("Failed to load event details");
       } finally {
         setIsLoading(false);
       }
-    };
-
-    if (params.id) {
-      fetchEvent();
     }
-  }, [params.id]);
+    if (id) load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const fundraiser = event?.fundraiser;
+  const currency = fundraiser?.currency ?? "GHS";
+  const availablePesewas = fundraiser
+    ? fundraiser.raisedAmount - fundraiser.totalWithdrawn
+    : 0;
+
+  const handleAddAccount = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddingAccount(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/payout-accounts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountType: newType === "bank" ? "BANK_ACCOUNT" : "MOBILE_MONEY",
+          bankCode,
+          accountNumber,
+        }),
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok)
+        throw new Error(body?.message ?? "Could not add the account");
+      setShowAddAccount(false);
+      setBankCode("");
+      setAccountNumber("");
+      await loadAccounts();
+      setSelectedAccount(body.account.id);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not add the account",
+      );
+    } finally {
+      setAddingAccount(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
-
-    if (!event) return;
+    setSuccess(null);
 
     const amount = Number.parseFloat(withdrawalAmount);
-    const availableAmount =
-      Number(event.fundraiser?.raisedAmount) - totalWithdrawn;
-
-    // Validate withdrawal amount
-    if (isNaN(amount) || amount <= 0) {
+    if (!Number.isFinite(amount) || amount <= 0) {
       setError("Please enter a valid withdrawal amount");
       setIsSubmitting(false);
       return;
     }
-
-    if (amount > availableAmount) {
-      setError(
-        `You can only withdraw up to $${availableAmount.toLocaleString()}`,
-      );
+    if (!selectedAccount) {
+      setError("Choose a payout account");
       setIsSubmitting(false);
       return;
     }
 
     try {
-      const withdrawalData = {
-        eventId: params.id,
-        amount,
-        accountType:
-          withdrawalMethod === "bank" ? "BANK_ACCOUNT" : "MOBILE_MONEY",
-        notes:
-          (e.currentTarget.elements.namedItem("notes") as HTMLTextAreaElement)
-            ?.value || null,
-      };
-
-      const response = await fetch("/api/withdrawals", {
+      const res = await fetch("/api/withdrawals", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(withdrawalData),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fundraiserId: fundraiser?.id,
+          payoutAccountId: selectedAccount,
+          amount,
+          notes: notes || undefined,
+        }),
       });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(body?.message ?? "Withdrawal failed");
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || "Failed to submit withdrawal request",
-        );
-      }
-
-      const result = await response.json();
-      setTotalWithdrawn((prev) => prev + amount);
-      alert("Withdrawal request submitted successfully!");
+      setSuccess("Withdrawal requested. It is now processing.");
       setWithdrawalAmount("");
-    } catch (error) {
-      console.error("Withdrawal error:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to submit withdrawal request",
+      setNotes("");
+      // Reflect the reservation locally.
+      setEvent((prev) =>
+        prev && prev.fundraiser
+          ? {
+              ...prev,
+              fundraiser: {
+                ...prev.fundraiser,
+                totalWithdrawn:
+                  prev.fundraiser.totalWithdrawn + Math.round(amount * 100),
+              },
+            }
+          : prev,
       );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Withdrawal failed");
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleMaxAmount = () => {
-    if (event) {
-      const availableAmount =
-        Number(event.fundraiser?.raisedAmount) - totalWithdrawn;
-      setWithdrawalAmount(availableAmount.toString());
     }
   };
 
@@ -145,14 +191,14 @@ export default function WithdrawFundsPage() {
     );
   }
 
-  if (!event) {
+  if (!event || !fundraiser) {
     return (
       <div className="container py-8">
         <Alert variant="destructive">
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>
-            Event not found or you don't have permission to withdraw funds from
-            this event.
+            Event not found or you don&apos;t have permission to withdraw funds
+            from this event.
             <Link href="/dashboard" className="block mt-2 underline">
               Return to dashboard
             </Link>
@@ -161,9 +207,6 @@ export default function WithdrawFundsPage() {
       </div>
     );
   }
-
-  const availableAmount =
-    Number(event.fundraiser?.raisedAmount || 0) - totalWithdrawn;
 
   return (
     <div className="container py-8 max-w-3xl">
@@ -183,27 +226,11 @@ export default function WithdrawFundsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center gap-4">
-            <img
-              src={
-                event.fundraiser?.image || "/placeholder.svg?height=64&width=64"
-              }
-              alt={event.title}
-              className="h-16 w-16 rounded object-cover"
-              width={64}
-              height={64}
-            />
-            <div>
-              <h3 className="font-medium">{event.title}</h3>
-              <p className="text-sm text-muted-foreground">ID: {event.id}</p>
-            </div>
-          </div>
-
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="rounded-lg border p-4">
               <div className="text-sm text-muted-foreground">Total Raised</div>
               <div className="text-2xl font-bold">
-                GH₵ {event.fundraiser?.raisedAmount?.toLocaleString() ?? "0"}
+                {formatMoney(fundraiser.raisedAmount, currency)}
               </div>
             </div>
             <div className="rounded-lg border p-4">
@@ -211,50 +238,144 @@ export default function WithdrawFundsPage() {
                 Previously Withdrawn
               </div>
               <div className="text-2xl font-bold">
-                GH₵ {totalWithdrawn?.toLocaleString() ?? "0"}
+                {formatMoney(fundraiser.totalWithdrawn, currency)}
               </div>
             </div>
             <div className="rounded-lg border p-4 bg-primary/5">
-              <div className="text-sm text-muted-foreground">
-                Available for Withdrawal
-              </div>
+              <div className="text-sm text-muted-foreground">Available</div>
               <div className="text-2xl font-bold">
-                GH₵ {availableAmount.toLocaleString()}
+                {formatMoney(availablePesewas, currency)}
               </div>
             </div>
           </div>
 
-          {availableAmount <= 0 ? (
+          {success && (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Requested</AlertTitle>
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {availablePesewas <= 0 ? (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>No funds available</AlertTitle>
               <AlertDescription>
-                There are currently no funds available for withdrawal. Funds
-                become available once donations are processed and any platform
-                fees are deducted.
+                There are currently no funds available for withdrawal.
               </AlertDescription>
             </Alert>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
+              <div className="space-y-2">
+                <Label>Payout account</Label>
+                {accounts.length > 0 ? (
+                  <Select
+                    value={selectedAccount}
+                    onValueChange={setSelectedAccount}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose an account" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {accounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.accountName} · {a.accountNumber}
+                          {a.bankName ? ` (${a.bankName})` : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    You have no payout accounts yet.
+                  </p>
+                )}
+                <Button
+                  type="button"
+                  variant="link"
+                  className="px-0"
+                  onClick={() => setShowAddAccount((v) => !v)}
+                >
+                  {showAddAccount ? "Cancel" : "Add a payout account"}
+                </Button>
+              </div>
+
+              {showAddAccount && (
+                <div className="space-y-4 rounded-md border p-4">
+                  <RadioGroup
+                    value={newType}
+                    onValueChange={(v) => setNewType(v as "bank" | "mobile")}
+                    className="flex gap-6"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="bank" id="new-bank" />
+                      <Label htmlFor="new-bank">Bank account</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="mobile" id="new-mobile" />
+                      <Label htmlFor="new-mobile">Mobile money</Label>
+                    </div>
+                  </RadioGroup>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="bankCode">
+                        {newType === "bank" ? "Bank code" : "Provider code"}
+                      </Label>
+                      <Input
+                        id="bankCode"
+                        value={bankCode}
+                        onChange={(e) => setBankCode(e.target.value)}
+                        placeholder={
+                          newType === "bank" ? "e.g. 058" : "e.g. MTN"
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="accountNumber">
+                        {newType === "bank"
+                          ? "Account number"
+                          : "Wallet number"}
+                      </Label>
+                      <Input
+                        id="accountNumber"
+                        value={accountNumber}
+                        onChange={(e) => setAccountNumber(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    onClick={handleAddAccount}
+                    disabled={addingAccount || !bankCode || !accountNumber}
+                  >
+                    {addingAccount ? "Verifying..." : "Verify & save account"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    We confirm the account with Paystack and save the verified
+                    name.
+                  </p>
+                </div>
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="amount">Withdrawal Amount ($)</Label>
+                <Label htmlFor="amount">Withdrawal amount ({currency})</Label>
                 <div className="relative">
                   <Input
                     id="amount"
                     type="number"
                     min="1"
-                    value={withdrawalAmount}
-                    onChange={(e) => setWithdrawalAmount(e.target.value)}
-                    max={String(availableAmount)} // Cast to string here
                     step="0.01"
+                    value={withdrawalAmount}
+                    max={String(toMajorUnits(availablePesewas))}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
                     placeholder="Enter amount to withdraw"
                     required
                     className="pr-20"
@@ -264,72 +385,40 @@ export default function WithdrawFundsPage() {
                     variant="ghost"
                     size="sm"
                     className="absolute right-1 top-1 h-7"
-                    onClick={handleMaxAmount}
+                    onClick={() =>
+                      setWithdrawalAmount(
+                        String(toMajorUnits(availablePesewas)),
+                      )
+                    }
                   >
                     Max
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  You can withdraw up to ${availableAmount.toLocaleString()}
+                  You can withdraw up to{" "}
+                  {formatMoney(availablePesewas, currency)}
                 </p>
               </div>
 
               <div className="space-y-2">
-                <Label>Withdrawal Method</Label>
-                <RadioGroup
-                  value={withdrawalMethod}
-                  onValueChange={setWithdrawalMethod}
-                  className="space-y-3"
-                >
-                  <div className="flex items-center space-x-3 rounded-md border p-3">
-                    <RadioGroupItem value="bank" id="bank" />
-                    <Label htmlFor="bank" className="flex-1 cursor-pointer">
-                      <div className="font-medium">Bank Account</div>
-                      <div className="text-xs text-muted-foreground">
-                        Bank transfer
-                      </div>
-                    </Label>
-                    <div className="text-xs text-muted-foreground">
-                      2-3 business days
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 rounded-md border p-3">
-                    <RadioGroupItem value="mobile" id="mobile" />
-                    <Label htmlFor="mobile" className="flex-1 cursor-pointer">
-                      <div className="font-medium">Mobile Money</div>
-                      <div className="text-xs text-muted-foreground">
-                        Mobile wallet transfer
-                      </div>
-                    </Label>
-                    <div className="text-xs text-muted-foreground">Instant</div>
-                  </div>
-                </RadioGroup>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Label htmlFor="notes">Notes (optional)</Label>
                 <Textarea
                   id="notes"
-                  name="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
                   placeholder="Add any notes about this withdrawal"
                   className="min-h-20"
                 />
               </div>
 
-              <Alert>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Important</AlertTitle>
-                <AlertDescription>
-                  Withdrawals typically take 2-3 business days to process for
-                  bank transfers and are instant for mobile money. Platform fees
-                  may apply to the withdrawal amount.
-                </AlertDescription>
-              </Alert>
-
               <div className="flex justify-end">
                 <Button
                   type="submit"
-                  disabled={isSubmitting || availableAmount <= 0}
+                  disabled={
+                    isSubmitting ||
+                    availablePesewas <= 0 ||
+                    accounts.length === 0
+                  }
                 >
                   {isSubmitting ? (
                     <>

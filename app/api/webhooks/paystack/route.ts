@@ -3,6 +3,13 @@ import { withErrorHandling } from "@/lib/api";
 import { AppError } from "@/lib/errors";
 import { verifyWebhookSignature } from "@/lib/paystack";
 import { recordDonationByReference } from "@/lib/services/donations";
+import { finalizeTransfer } from "@/lib/services/withdrawals";
+
+const TRANSFER_OUTCOME: Record<string, "success" | "failed" | "reversed"> = {
+  "transfer.success": "success",
+  "transfer.failed": "failed",
+  "transfer.reversed": "reversed",
+};
 
 // Paystack's server-to-server notification. This is the source of truth for a
 // donation: charge.success records it. The request is trusted only after its
@@ -26,22 +33,28 @@ export const POST = withErrorHandling(async (request: Request) => {
     return NextResponse.json({ received: true });
   }
 
-  if (event.event === "charge.success") {
-    const reference = event.data?.reference;
-    if (typeof reference === "string") {
-      try {
-        await recordDonationByReference(reference);
-      } catch (error) {
-        const permanent =
-          error instanceof AppError &&
-          (error.code === "PAYMENT_FAILED" || error.code === "NOT_FOUND");
-        if (!permanent) throw error;
-        console.error(
-          `Webhook: could not attribute charge ${reference}:`,
-          error instanceof Error ? error.message : error,
-        );
-      }
+  const reference = event.data?.reference;
+
+  if (event.event === "charge.success" && typeof reference === "string") {
+    try {
+      await recordDonationByReference(reference);
+    } catch (error) {
+      const permanent =
+        error instanceof AppError &&
+        (error.code === "PAYMENT_FAILED" || error.code === "NOT_FOUND");
+      if (!permanent) throw error;
+      console.error(
+        `Webhook: could not attribute charge ${reference}:`,
+        error instanceof Error ? error.message : error,
+      );
     }
+  }
+
+  const transferOutcome = event.event && TRANSFER_OUTCOME[event.event];
+  if (transferOutcome && typeof reference === "string") {
+    // finalizeTransfer ignores a reference it does not know, so a transfer
+    // we did not start is harmless.
+    await finalizeTransfer(reference, transferOutcome);
   }
 
   return NextResponse.json({ received: true });

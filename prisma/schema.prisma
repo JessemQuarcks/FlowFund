@@ -55,6 +55,7 @@ model User {
 
   events Event[]
   withdrawals Withdrawal[]
+  payoutAccounts PayoutAccount[]
 }
 
 model VerificationToken {
@@ -145,14 +146,44 @@ model Withdrawal {
   status Withdrawal_Status
   paymentDetails Json
   recipientCode String
+  // Server-generated transfer reference. Unique so a transfer webhook maps to
+  // exactly one withdrawal. Nullable only for rows created before this column.
+  reference String? @unique
+  payoutAccountId String?
+  payoutAccount PayoutAccount? @relation(fields: [payoutAccountId], references: [id])
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
 }
 
+// A verified destination for a user's payouts. The account is resolved with
+// Paystack and registered once as a transfer recipient; the recipientCode is
+// what transfers are sent to.
+model PayoutAccount {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountType Account_Type
+  bankCode String
+  bankName String?
+  accountNumber String
+  // The account holder's name as Paystack resolved it, not as typed.
+  accountName String
+  recipientCode String
+  currency String @default("GHS")
+  dateAdded DateTime @default(now())
+  dateUpdated DateTime @updatedAt
+
+  withdrawals Withdrawal[]
+
+  @@unique([userId, recipientCode])
+}
+
 enum Withdrawal_Status {
   PENDING
+  PROCESSING
   COMPLETED
   FAILED
+  REVERSED
 }
 
 enum Account_Type {

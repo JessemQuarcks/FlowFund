@@ -81,6 +81,112 @@ export async function initializeTransaction(
   return body.data;
 }
 
+async function paystackGet<T>(path: string): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${PAYSTACK_BASE}${path}`, {
+      headers: authHeaders(),
+      cache: "no-store",
+    });
+  } catch (error) {
+    console.error(`Paystack GET ${path} failed:`, error);
+    throw errors.upstreamFailed("Could not reach the payment provider");
+  }
+  const body = (await response.json().catch(() => null)) as {
+    status?: boolean;
+    message?: string;
+    data?: T;
+  } | null;
+  if (!response.ok || !body?.status) {
+    throw errors.badRequest(
+      body?.message ?? "Payment provider rejected the request",
+    );
+  }
+  return body.data as T;
+}
+
+async function paystackPost<T>(path: string, payload: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${PAYSTACK_BASE}${path}`, {
+      method: "POST",
+      headers: authHeaders(),
+      cache: "no-store",
+      body: JSON.stringify(payload),
+    });
+  } catch (error) {
+    console.error(`Paystack POST ${path} failed:`, error);
+    throw errors.upstreamFailed("Could not reach the payment provider");
+  }
+  const body = (await response.json().catch(() => null)) as {
+    status?: boolean;
+    message?: string;
+    data?: T;
+  } | null;
+  if (!response.ok || !body?.status) {
+    throw errors.badRequest(
+      body?.message ?? "Payment provider rejected the request",
+    );
+  }
+  return body.data as T;
+}
+
+export type ResolvedAccount = { account_number: string; account_name: string };
+
+// Confirms an account number belongs to a real account and returns the holder's
+// name as the bank/mobile-money operator records it.
+export function resolveAccount(
+  accountNumber: string,
+  bankCode: string,
+): Promise<ResolvedAccount> {
+  const query = new URLSearchParams({
+    account_number: accountNumber,
+    bank_code: bankCode,
+  });
+  return paystackGet<ResolvedAccount>(`/bank/resolve?${query.toString()}`);
+}
+
+// Ghana recipient types: bank accounts clear over GhIPSS, wallets are
+// mobile_money. The old code sent everything as ghipss.
+export type RecipientType = "ghipss" | "mobile_money";
+
+export type TransferRecipient = {
+  recipient_code: string;
+  type: string;
+  details?: { account_name?: string | null };
+};
+
+export function createTransferRecipient(input: {
+  type: RecipientType;
+  name: string;
+  account_number: string;
+  bank_code: string;
+  currency: string;
+}): Promise<TransferRecipient> {
+  return paystackPost<TransferRecipient>("/transferrecipient", input);
+}
+
+export type TransferResult = {
+  transfer_code: string;
+  reference: string;
+  status: string;
+};
+
+// Sends money out of the platform balance to a registered recipient. The
+// final outcome arrives later by transfer webhook.
+export function initiateTransfer(input: {
+  amount: number; // pesewas
+  recipient: string; // recipient_code
+  reference: string;
+  reason?: string;
+  currency: string;
+}): Promise<TransferResult> {
+  return paystackPost<TransferResult>("/transfer", {
+    source: "balance",
+    ...input,
+  });
+}
+
 // Confirms a webhook really came from Paystack: the x-paystack-signature header
 // is an HMAC-SHA512 of the exact raw request body, keyed by the secret key.
 export function verifyWebhookSignature(
