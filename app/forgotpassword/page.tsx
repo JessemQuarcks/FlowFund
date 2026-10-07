@@ -34,13 +34,23 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // TODO: Implement password reset functionality
-
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message ?? "Something went wrong");
+      }
+      // The response is the same whether or not the email exists.
       setIsSubmitted(true);
-    }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (

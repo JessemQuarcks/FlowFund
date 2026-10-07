@@ -28,25 +28,37 @@ import { ArrowLeft, Mail, Phone, MapPin, Loader2 } from "lucide-react";
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
 
-    // In a real app, this would submit to an API
     const formData = new FormData(e.currentTarget);
-    console.log({
-      name: formData.get("name"),
-      email: formData.get("email"),
-      subject: formData.get("subject"),
-      message: formData.get("message"),
-    });
+    const payload = {
+      name: String(formData.get("name") ?? ""),
+      email: String(formData.get("email") ?? ""),
+      subject: String(formData.get("subject") ?? "") || undefined,
+      message: String(formData.get("message") ?? ""),
+    };
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.message ?? "Could not send your message");
+      }
       setIsSuccess(true);
-    }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not send");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -219,6 +231,11 @@ export default function ContactPage() {
             ) : (
               <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-4">
+                  {error && (
+                    <p className="text-sm text-red-600" role="alert">
+                      {error}
+                    </p>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
                     <Input

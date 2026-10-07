@@ -16,3 +16,14 @@ export const signupSchema = z.object({
 });
 
 export type SignupInput = z.infer<typeof signupSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address").max(254),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  password: passwordPolicy,
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

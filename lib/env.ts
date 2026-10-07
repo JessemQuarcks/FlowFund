@@ -47,6 +47,22 @@ const schema = z
       (value) => (value === "" ? undefined : value),
       z.string().min(16, "must be at least 16 characters").optional(),
     ),
+    // Optional email delivery (Resend). When RESEND_API_KEY and EMAIL_FROM are
+    // unset, emails are logged instead of sent, so local dev and tests work
+    // without a provider.
+    RESEND_API_KEY: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().optional(),
+    ),
+    EMAIL_FROM: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().optional(),
+    ),
+    // Where the contact form delivers; falls back to EMAIL_FROM.
+    CONTACT_TO: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().optional(),
+    ),
   })
   .refine(
     (env) =>

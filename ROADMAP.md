@@ -168,7 +168,7 @@ Gate: no screen shows sample data or a fake submit handler.
 - [x] Profile page that saves: name, avatar upload, password change (`/api/profile`, `/api/profile/avatar`, `/api/profile/password`; the page loads the real user and only a hasPassword boolean reaches the client; an OAuth-only account can set a first password)
 - [ ] Email verification and a real password reset using the existing `VerificationToken` table
 - [ ] Transactional email (Resend or Postmark): donation receipt, new-donation alert, payout status, password reset
-- [ ] Contact form that sends email or creates a ticket
+- [x] Contact form that sends email (`POST /api/contact` → `CONTACT_TO`/`EMAIL_FROM`; the page submits for real instead of a `setTimeout`)
 - [x] Dashboard "My donations" linked by `userId` when signed in (no longer matched by the email typed at checkout)
 - [x] Edit rules: lock target and minimum after the first donation; allow editing events whose date has passed (`updateEventSchema` permits past dates; `updateEvent` refuses a changed target/minimum once a donation exists)
 - [ ] Toasts instead of `alert()`; `error.tsx`, `not-found.tsx` and loading states; react-hook-form with shared schemas
