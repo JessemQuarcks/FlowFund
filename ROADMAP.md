@@ -165,7 +165,7 @@ Gate: no screen shows sample data or a fake submit handler.
 - [x] Home page "featured" limited and curated instead of loading every event (`featuredEvents` returns the few most active current campaigns)
 - [x] Share button (Web Share API with copy-link fallback); per-event `generateMetadata` and Open Graph image (`ShareButton` component; the event page sets title/description/OG/Twitter tags from the event and its image)
 - [ ] Close / archive campaign UI (replace the empty `delete-event-button.tsx`)
-- [ ] Profile page that saves: name, avatar upload, password change
+- [x] Profile page that saves: name, avatar upload, password change (`/api/profile`, `/api/profile/avatar`, `/api/profile/password`; the page loads the real user and only a hasPassword boolean reaches the client; an OAuth-only account can set a first password)
 - [ ] Email verification and a real password reset using the existing `VerificationToken` table
 - [ ] Transactional email (Resend or Postmark): donation receipt, new-donation alert, payout status, password reset
 - [ ] Contact form that sends email or creates a ticket

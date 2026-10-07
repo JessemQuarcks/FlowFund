@@ -4,6 +4,7 @@ import { cloudinary } from "@/lib/cloudinary";
 import { errors } from "@/lib/errors";
 
 const EVENT_IMAGE_FOLDER = "event-images";
+const AVATAR_FOLDER = "avatars";
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 export const ALLOWED_IMAGE_TYPES = [
   "image/jpeg",
@@ -24,8 +25,8 @@ export function validateImage(file: File) {
   }
 }
 
-// Uploads an event cover image and returns its HTTPS URL.
-export async function uploadEventImage(file: File): Promise<string> {
+// Uploads a validated image to a Cloudinary folder and returns its HTTPS URL.
+async function uploadImage(file: File, folder: string): Promise<string> {
   validateImage(file);
   const buffer = Buffer.from(await file.arrayBuffer());
 
@@ -36,7 +37,7 @@ export async function uploadEventImage(file: File): Promise<string> {
         cloudinary.uploader
           .upload_stream(
             {
-              folder: EVENT_IMAGE_FOLDER,
+              folder,
               resource_type: "image",
               public_id: randomUUID(),
             },
@@ -52,6 +53,16 @@ export async function uploadEventImage(file: File): Promise<string> {
     throw errors.upstreamFailed("Failed to upload image");
   }
   return result.secure_url;
+}
+
+// Uploads an event cover image and returns its HTTPS URL.
+export function uploadEventImage(file: File): Promise<string> {
+  return uploadImage(file, EVENT_IMAGE_FOLDER);
+}
+
+// Uploads a user avatar and returns its HTTPS URL.
+export function uploadAvatar(file: File): Promise<string> {
+  return uploadImage(file, AVATAR_FOLDER);
 }
 
 // Cloudinary delivery URLs look like
