@@ -77,8 +77,22 @@ model Event {
   category Event_Category
   date DateTime
   fundraiser Fundraiser?
+  updates Update[]
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
+}
+
+// A progress update an organiser posts to their event's Updates tab.
+model Update {
+  id String @id @default(uuid())
+  eventId String
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  title String
+  body String @db.Text
+  dateAdded DateTime @default(now())
+  dateUpdated DateTime @updatedAt
+
+  @@index([eventId])
 }
 
 enum Event_Category {

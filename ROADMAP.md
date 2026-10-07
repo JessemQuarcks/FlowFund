@@ -160,7 +160,7 @@ Open decisions settled (2026-10-07): custodial balance with transfers out (not s
 Gate: no screen shows sample data or a fake submit handler.
 
 - [x] Donors tab from real donations, respecting anonymity, paginated (`listDonors` + `GET /api/events/[id]/donors`; anonymous gifts show as "Anonymous" and the email is never exposed; `Donation.userId`/`isAnonymous` added, captured from the session at initialise)
-- [ ] Campaign updates: an `Update` model, organiser posting UI, list on the event page
+- [x] Campaign updates: an `Update` model, organiser posting UI, list on the event page (the Updates tab lists real posts; the organiser sees a post form; `GET/POST /api/events/[id]/updates`, owner-only create/delete)
 - [x] Discover page: search, category, sort and goal range driven by URL search params, with pagination (`searchEvents` + `parseDiscoverParams`/`buildDiscoverWhere`; a `DiscoverFilters` client component writes the filters to the URL so results are shareable and server-rendered; 9 per page)
 - [x] Home page "featured" limited and curated instead of loading every event (`featuredEvents` returns the few most active current campaigns)
 - [ ] Share button (Web Share API with copy-link fallback); per-event `generateMetadata` and Open Graph image

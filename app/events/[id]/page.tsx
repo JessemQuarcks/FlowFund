@@ -12,8 +12,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft, Calendar, Clock, Share2, Users } from "lucide-react";
 import { DonationForm } from "@/components/donation-form";
 import { DonorsList } from "@/components/donors-list";
+import { EventUpdates } from "@/components/event-updates";
 import { prisma } from "@/lib/prisma"; // Import prisma client
 import { formatMoney } from "@/lib/money";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function EventPage({
   params,
@@ -43,6 +46,9 @@ export default async function EventPage({
       },
     },
   });
+
+  const session = await getServerSession(authOptions);
+  const isOwner = !!session?.user?.id && session.user.id === event?.userId;
 
   // Handle case where event is not found
   if (!event) {
@@ -225,60 +231,7 @@ export default async function EventPage({
               <DonorsList eventId={event.id} />
             </TabsContent>
             <TabsContent value="updates">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Project Updates</CardTitle>
-                  <CardDescription>
-                    Stay informed about our progress
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="border-b pb-4">
-                      <div className="flex justify-between mb-1">
-                        <h3 className="font-semibold text-primary-600">
-                          Site preparation completed!
-                        </h3>
-                        <span className="text-sm text-muted-foreground">
-                          2 days ago
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        We've cleared the site and prepared the ground for the
-                        raised beds. Thanks to all volunteers who helped!
-                      </p>
-                    </div>
-                    <div className="border-b pb-4">
-                      <div className="flex justify-between mb-1">
-                        <h3 className="font-semibold text-primary-600">
-                          Materials ordered
-                        </h3>
-                        <span className="text-sm text-muted-foreground">
-                          1 week ago
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        We've ordered lumber, soil, and initial plants. Delivery
-                        expected next week.
-                      </p>
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1">
-                        <h3 className="font-semibold text-primary-600">
-                          Fundraising launched!
-                        </h3>
-                        <span className="text-sm text-muted-foreground">
-                          2 weeks ago
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        We're excited to launch our fundraising campaign for the
-                        community garden project!
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <EventUpdates eventId={event.id} isOwner={isOwner} />
             </TabsContent>
           </Tabs>
         </div>
