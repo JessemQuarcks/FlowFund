@@ -12,6 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { MoveRight, TrendingUp, Users } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { EventWithDaysLeft } from "@/types";
+import { formatMoney } from "@/lib/money";
 
 export default async function Home() {
   // Await the database query to get the actual array
@@ -108,9 +109,15 @@ export default async function Home() {
                       <div className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
                           <span>
-                            ${event.fundraiser?.raisedAmount.toLocaleString()}{" "}
-                            raised of $
-                            {event.fundraiser?.targetAmount.toLocaleString()}
+                            {formatMoney(
+                              event.fundraiser?.raisedAmount ?? 0,
+                              event.fundraiser?.currency,
+                            )}{" "}
+                            raised of{" "}
+                            {formatMoney(
+                              event.fundraiser?.targetAmount ?? 0,
+                              event.fundraiser?.currency,
+                            )}
                           </span>
                           <span className="font-medium text-primary-600">
                             {event.fundraiser

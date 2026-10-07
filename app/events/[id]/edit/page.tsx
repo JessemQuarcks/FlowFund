@@ -25,6 +25,7 @@ import {
 import { ArrowLeft, Loader2, Upload, X } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { EventWithFundraiser } from "@/types";
+import { toMajorUnits } from "@/lib/money";
 
 export default function EditEventPage({
   params,
@@ -300,7 +301,11 @@ export default function EditEventPage({
                   type="number"
                   min="1"
                   step="1"
-                  defaultValue={Number(event?.fundraiser?.targetAmount)}
+                  defaultValue={
+                    event.fundraiser
+                      ? toMajorUnits(event.fundraiser.targetAmount)
+                      : ""
+                  }
                   placeholder="5000"
                   required
                 />
@@ -314,7 +319,11 @@ export default function EditEventPage({
                   min="1"
                   step="1"
                   placeholder="5"
-                  defaultValue={Number(event.fundraiser?.minimumAmount)}
+                  defaultValue={
+                    event.fundraiser
+                      ? toMajorUnits(event.fundraiser.minimumAmount)
+                      : ""
+                  }
                 />
               </div>
             </div>

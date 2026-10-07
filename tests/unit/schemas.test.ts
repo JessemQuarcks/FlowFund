@@ -54,10 +54,12 @@ describe("createEventSchema", () => {
     return data;
   };
 
-  it("parses a valid form", () => {
+  it("parses a valid form and converts money to pesewas", () => {
     const parsed = createEventSchema.parse(form());
     expect(parsed.event.title).toBe("Clean-up day");
-    expect(parsed.fundraiser.targetAmount).toBe(1000);
+    // 1000 GHS and 5 GHS are stored as integer pesewas.
+    expect(parsed.fundraiser.targetAmount).toBe(100_000);
+    expect(parsed.fundraiser.minimumAmount).toBe(500);
     expect(parsed.fundraiser.anonymity).toBe(false);
   });
 

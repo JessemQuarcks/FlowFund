@@ -78,10 +78,10 @@ describe("recordVerifiedDonation", () => {
       donorInfo: donor("kofi@example.com"),
     });
 
-    expect(donation).toEqual({ id: expect.any(String), amount: 50 });
+    expect(donation).toEqual({ id: expect.any(String), amount: 5_000 });
     expect(Object.keys(donation)).not.toContain("paymentDetails");
     expect(await fundraiserTotals(fundraiser.id)).toEqual({
-      raisedAmount: 50,
+      raisedAmount: 5_000,
       donorCount: 1,
     });
   });
@@ -100,7 +100,7 @@ describe("recordVerifiedDonation", () => {
 
     expect(second).toEqual(first);
     expect(await prisma.donation.count()).toBe(1);
-    expect((await fundraiserTotals(fundraiser.id)).raisedAmount).toBe(50);
+    expect((await fundraiserTotals(fundraiser.id)).raisedAmount).toBe(5_000);
     // The replay is answered from the database without asking Paystack.
     expect(paystack).toHaveBeenCalledTimes(1);
   });
@@ -193,7 +193,7 @@ describe("recordVerifiedDonation", () => {
     await give(null);
 
     expect(await fundraiserTotals(fundraiser.id)).toEqual({
-      raisedAmount: 250,
+      raisedAmount: 25_000,
       donorCount: 4,
     });
   });
@@ -213,7 +213,7 @@ describe("recordVerifiedDonation", () => {
 
     expect(new Set(results.map((r) => r.id)).size).toBe(1);
     expect(await prisma.donation.count()).toBe(1);
-    expect((await fundraiserTotals(fundraiser.id)).raisedAmount).toBe(50);
+    expect((await fundraiserTotals(fundraiser.id)).raisedAmount).toBe(5_000);
   });
 
   it("adds up concurrent donations exactly", async () => {
@@ -231,7 +231,7 @@ describe("recordVerifiedDonation", () => {
     );
 
     expect(await fundraiserTotals(fundraiser.id)).toEqual({
-      raisedAmount: 125,
+      raisedAmount: 12_500,
       donorCount: 5,
     });
   });

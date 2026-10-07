@@ -52,7 +52,6 @@ export async function recordVerifiedDonation({
       ? payment.metadata
       : {};
   if (
-    payment.currency !== "GHS" ||
     payment.reference !== reference ||
     metadata.fundraiser_id !== fundraiserId
   ) {
@@ -64,7 +63,12 @@ export async function recordVerifiedDonation({
   });
   if (!fundraiser) throw errors.notFound("Fundraiser not found");
 
-  const amount = payment.amount / 100; // Convert from pesewas
+  // Paystack reports the amount in the currency's minor unit (pesewas for
+  // GHS), which is exactly how we store it.
+  if (payment.currency !== fundraiser.currency) {
+    throw errors.paymentFailed("Payment does not match this fundraiser");
+  }
+  const amount = payment.amount;
 
   // The money has already been captured, so a below-minimum payment is
   // still recorded. The donation form enforces the minimum; server-side
@@ -98,6 +102,7 @@ export async function recordVerifiedDonation({
           data: {
             reference,
             amount,
+            currency: fundraiser.currency,
             // Stored as received, for reconciliation.
             paymentDetails: paymentData as unknown as Prisma.InputJsonObject,
             donorFirstName: donorInfo?.firstName,

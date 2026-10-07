@@ -15,6 +15,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth"; // Adjust path as needed
 import { EventWithDaysLeft } from "@/types";
+import { formatMoney } from "@/lib/money";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -153,14 +154,15 @@ export default async function DashboardPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span>
-                              GH₵
-                              {Number(
+                              {formatMoney(
                                 event.fundraiser.raisedAmount,
-                              ).toLocaleString()}{" "}
-                              raised of GH₵
-                              {Number(
+                                event.fundraiser.currency,
+                              )}{" "}
+                              raised of{" "}
+                              {formatMoney(
                                 event.fundraiser.targetAmount,
-                              ).toLocaleString()}
+                                event.fundraiser.currency,
+                              )}
                             </span>
                             <span className="font-medium text-primary-600">
                               {Math.round(
@@ -254,7 +256,7 @@ export default async function DashboardPage() {
                         </div>
                       </div>
                       <div className="font-medium text-primary-600">
-                        ${Number(donation.amount).toLocaleString()}
+                        {formatMoney(donation.amount, donation.currency)}
                       </div>
                     </div>
                   ))}
@@ -295,7 +297,7 @@ export default async function DashboardPage() {
                       </div>
                       <div className="space-y-1 text-right">
                         <div className="font-medium text-primary-600">
-                          ${Number(withdrawal.amount).toLocaleString()}
+                          {formatMoney(withdrawal.amount, withdrawal.currency)}
                         </div>
                         <div
                           className={`text-xs px-2 py-1 rounded-full inline-block ${

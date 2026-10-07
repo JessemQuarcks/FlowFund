@@ -1,6 +1,7 @@
 import { Event_Category } from "@/lib/generated/prisma";
 import { z } from "zod";
 import { zfd } from "zod-form-data";
+import { toMinorUnits } from "@/lib/money";
 
 export const createEventSchema = zfd.formData({
   event: z.object({
@@ -17,9 +18,11 @@ export const createEventSchema = zfd.formData({
     image: zfd.file(z.instanceof(File).optional()),
   }),
   fundraiser: z.object({
-    targetAmount: zfd.numeric(z.number().min(1)),
+    // Collected from the form in GHS and converted to integer pesewas, so the
+    // service and database only ever see pesewas.
+    targetAmount: zfd.numeric(z.number().min(1).transform(toMinorUnits)),
     anonymity: zfd.checkbox(),
-    minimumAmount: zfd.numeric(z.number().min(0.1)),
+    minimumAmount: zfd.numeric(z.number().min(0.1).transform(toMinorUnits)),
     endDate: zfd.text(
       z
         .string()

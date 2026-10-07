@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Search, Users, Clock, Filter } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { formatMoney } from "@/lib/money";
 
 export default async function EventsPage() {
   // Fetch events from database with their fundraiser data
@@ -188,14 +189,15 @@ export default async function EventsPage() {
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
                             <span>
-                              $
-                              {Number(
+                              {formatMoney(
                                 event.fundraiser.raisedAmount,
-                              ).toLocaleString()}{" "}
-                              raised of $
-                              {Number(
+                                event.fundraiser.currency,
+                              )}{" "}
+                              raised of{" "}
+                              {formatMoney(
                                 event.fundraiser.targetAmount,
-                              ).toLocaleString()}
+                                event.fundraiser.currency,
+                              )}
                             </span>
                             <span className="font-medium text-primary-600">
                               {Math.round(

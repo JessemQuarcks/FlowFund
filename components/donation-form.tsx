@@ -13,6 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { EventWithFundraiserAndUser } from "@/types";
+import { toMajorUnits } from "@/lib/money";
 
 export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
   const [amount, setAmount] = useState<string>("");
@@ -132,7 +133,11 @@ export function DonationForm({ event }: { event: EventWithFundraiserAndUser }) {
     };
   };
 
-  const minimumAmount = Math.max(event.fundraiser?.minimumAmount ?? 0, 0.1);
+  // The fundraiser's minimum is stored in pesewas; the form works in GHS.
+  const minimumAmount = Math.max(
+    toMajorUnits(event.fundraiser?.minimumAmount ?? 0),
+    0.1,
+  );
   const selectedAmount = Number.parseFloat(
     amount === "custom" ? customAmount : amount,
   );

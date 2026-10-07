@@ -13,6 +13,7 @@ import { ArrowLeft, Calendar, Clock, Share2, Users } from "lucide-react";
 import { DonationForm } from "@/components/donation-form";
 import { DonorsList } from "@/components/donors-list";
 import { prisma } from "@/lib/prisma"; // Import prisma client
+import { formatMoney } from "@/lib/money";
 
 export default async function EventPage({
   params,
@@ -193,17 +194,23 @@ export default async function EventPage({
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Target</span>
                       <span className="font-medium">
-                        GH₵
-                        {event.fundraiser?.targetAmount.toLocaleString() ||
-                          "N/A"}
+                        {event.fundraiser
+                          ? formatMoney(
+                              event.fundraiser.targetAmount,
+                              event.fundraiser.currency,
+                            )
+                          : "N/A"}
                       </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Raised</span>
                       <span className="font-medium text-primary-600">
-                        GH₵
-                        {event.fundraiser?.raisedAmount.toLocaleString() ||
-                          "N/A"}
+                        {event.fundraiser
+                          ? formatMoney(
+                              event.fundraiser.raisedAmount,
+                              event.fundraiser.currency,
+                            )
+                          : "N/A"}
                       </span>
                     </div>
                     <div className="flex justify-between">
@@ -285,9 +292,15 @@ export default async function EventPage({
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span>
-                    ₵{event.fundraiser?.raisedAmount.toLocaleString() || 0}{" "}
-                    raised of ₵
-                    {event.fundraiser?.targetAmount.toLocaleString() || 0}
+                    {formatMoney(
+                      event.fundraiser?.raisedAmount ?? 0,
+                      event.fundraiser?.currency,
+                    )}{" "}
+                    raised of{" "}
+                    {formatMoney(
+                      event.fundraiser?.targetAmount ?? 0,
+                      event.fundraiser?.currency,
+                    )}
                   </span>
                   <span className="font-medium text-primary-600">
                     {progress}%

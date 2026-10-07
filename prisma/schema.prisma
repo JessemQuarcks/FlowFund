@@ -94,14 +94,20 @@ model Fundraiser {
   id String @id @default(uuid())
   eventId String @unique
   event Event @relation(fields: [eventId], references: [id])
-  targetAmount Float
+  // All money is stored as an integer number of pesewas (1 GHS = 100
+  // pesewas). Never store money as a float. Use lib/money to convert at the
+  // edges and formatGHS to display.
+  targetAmount Int
   endDate DateTime
   anonymity Boolean
-  minimumAmount Float
+  minimumAmount Int
   image String?
-  raisedAmount Float
+  raisedAmount Int
   donorCount Int
-  totalWithdrawn Float
+  totalWithdrawn Int
+  // ISO 4217 currency code. GHS today; a column so other Paystack markets
+  // can be added without a migration.
+  currency String @default("GHS")
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
 
@@ -114,7 +120,8 @@ model Donation {
   // Paystack transaction reference. Unique so one payment can only be
   // recorded once. Nullable only for rows created before this column existed.
   reference String? @unique
-  amount Float
+  amount Int // pesewas
+  currency String @default("GHS")
   fundraiserId String
   fundraiser Fundraiser @relation(fields: [fundraiserId], references: [id])
   donorFirstName String?
@@ -127,7 +134,8 @@ model Donation {
 
 model Withdrawal {
   id String @id @default(uuid())
-  amount Float
+  amount Int // pesewas
+  currency String @default("GHS")
   fundraiserId String
   fundraiser Fundraiser @relation(fields: [fundraiserId], references: [id])
   userId String
