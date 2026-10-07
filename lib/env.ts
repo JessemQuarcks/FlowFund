@@ -40,6 +40,13 @@ const schema = z
       (value) => /^pk_(test|live)_/.test(value),
       "must start with pk_test_ or pk_live_",
     ),
+    // Optional shared secret that guards the reconciliation trigger
+    // (/api/cron/reconcile). Any scheduler sends it as a Bearer token. When
+    // unset, the trigger is disabled. See roadmap Phase 2 (reconciliation).
+    CRON_SECRET: z.preprocess(
+      (value) => (value === "" ? undefined : value),
+      z.string().min(16, "must be at least 16 characters").optional(),
+    ),
   })
   .refine(
     (env) =>

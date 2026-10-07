@@ -187,6 +187,40 @@ export function initiateTransfer(input: {
   });
 }
 
+export type PaystackTransfer = {
+  status: string; // success | failed | reversed | pending | otp | ...
+  reference: string;
+  amount: number; // pesewas
+  currency: string;
+};
+
+// Looks up a transfer by its reference, for reconciliation. Returns null when
+// Paystack does not know the reference.
+export async function verifyTransfer(
+  reference: string,
+): Promise<PaystackTransfer | null> {
+  let response: Response;
+  try {
+    response = await fetch(
+      `${PAYSTACK_BASE}/transfer/verify/${encodeURIComponent(reference)}`,
+      { headers: authHeaders(), cache: "no-store" },
+    );
+  } catch (error) {
+    console.error("Paystack transfer verify request failed:", error);
+    throw errors.upstreamFailed("Could not reach the payment provider");
+  }
+  if (response.status === 404 || response.status === 400) return null;
+  if (!response.ok) {
+    throw errors.upstreamFailed("Could not reach the payment provider");
+  }
+  const body = (await response.json().catch(() => null)) as {
+    status?: boolean;
+    data?: PaystackTransfer;
+  } | null;
+  if (!body?.status || !body.data) return null;
+  return body.data;
+}
+
 // Confirms a webhook really came from Paystack: the x-paystack-signature header
 // is an HMAC-SHA512 of the exact raw request body, keyed by the secret key.
 export function verifyWebhookSignature(
