@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma";
 import { errors } from "@/lib/errors";
-import type { CreateEventInput } from "@/schemas/event";
+import type { CreateEventInput, UpdateEventInput } from "@/schemas/event";
 import type { EventWithFundraiser } from "@/types";
 import {
   EVENTS_PER_PAGE,
@@ -166,11 +166,13 @@ export async function getOwnedEvent(
 export async function updateEvent(
   userId: string,
   eventId: string,
-  input: CreateEventInput,
+  input: UpdateEventInput,
 ) {
   const existing = await prisma.event.findUnique({
     where: { id: eventId },
-    include: { fundraiser: true },
+    include: {
+      fundraiser: { include: { _count: { select: { donations: true } } } },
+    },
   });
   if (!existing) throw errors.notFound("Event not found");
   if (existing.userId !== userId) throw errors.forbidden();
@@ -179,6 +181,21 @@ export async function updateEvent(
     event: { image, ...eventData },
     fundraiser,
   } = input;
+
+  // Once a fundraiser has a donation, the goal and the minimum are locked:
+  // donors gave against those terms, so they must not change underneath them.
+  const hasDonations =
+    !!existing.fundraiser && existing.fundraiser._count.donations > 0;
+  if (
+    hasDonations &&
+    existing.fundraiser &&
+    (fundraiser.targetAmount !== existing.fundraiser.targetAmount ||
+      fundraiser.minimumAmount !== existing.fundraiser.minimumAmount)
+  ) {
+    throw errors.badRequest(
+      "The target and minimum cannot change after the first donation",
+    );
+  }
 
   // Upload the new image before touching the old one, so a failed upload
   // leaves the event as it was.

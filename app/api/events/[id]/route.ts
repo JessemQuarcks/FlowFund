@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, withErrorHandling } from "@/lib/api";
 import { deleteEvent, getOwnedEvent, updateEvent } from "@/lib/services/events";
-import { createEventSchema } from "@/schemas/event";
+import { updateEventSchema } from "@/schemas/event";
 
 type Context = { params: Promise<{ id: string }> };
 
@@ -18,7 +18,7 @@ export const PUT = withErrorHandling(
   async (request: Request, { params }: Context) => {
     const { id } = await params;
     const user = await requireUser();
-    const input = createEventSchema.parse(await request.formData());
+    const input = updateEventSchema.parse(await request.formData());
     const event = await updateEvent(user.id, id, input);
     return NextResponse.json({ message: "Event updated successfully", event });
   },

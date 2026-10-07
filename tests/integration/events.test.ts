@@ -153,6 +153,46 @@ describe("updateEvent", () => {
     ).rejects.toMatchObject({ status: 403 });
     expect(upload).not.toHaveBeenCalled();
   });
+
+  it("locks the target and minimum once a donation exists", async () => {
+    const user = await createUser();
+    // Helper sets targetAmount 10_000 and minimumAmount 1 (pesewas).
+    const event = await createEventWithFundraiser(user.id);
+    await prisma.donation.create({
+      data: {
+        reference: randomUUID(),
+        amount: 5_000,
+        fundraiserId: event.fundraiser!.id,
+        paymentDetails: {},
+      },
+    });
+
+    // input() uses a different target (2_000), so it must be refused.
+    await expect(updateEvent(user.id, event.id, input())).rejects.toMatchObject(
+      { status: 400 },
+    );
+
+    // Same target and minimum, other fields changed: allowed.
+    await updateEvent(user.id, event.id, {
+      event: {
+        title: "Renamed",
+        description: "Still going",
+        category: "COMMUNITY",
+        date: inAWeek(),
+        image: undefined,
+      },
+      fundraiser: {
+        targetAmount: 10_000,
+        minimumAmount: 1,
+        anonymity: false,
+        endDate: inAWeek(),
+      },
+    });
+    const saved = await prisma.event.findUniqueOrThrow({
+      where: { id: event.id },
+    });
+    expect(saved.title).toBe("Renamed");
+  });
 });
 
 describe("deleteEvent", () => {

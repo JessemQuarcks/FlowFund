@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { signupSchema } from "@/schemas/auth";
-import { createEventSchema } from "@/schemas/event";
+import { createEventSchema, updateEventSchema } from "@/schemas/event";
 
 describe("signupSchema", () => {
   const valid = { name: "Ama", email: "ama@example.com", password: "secret1!" };
@@ -75,5 +75,20 @@ describe("createEventSchema", () => {
       form({ "event.category": "CRYPTO" }),
     );
     expect(result.success).toBe(false);
+  });
+
+  it("updateEventSchema allows past dates that create rejects", () => {
+    const past = {
+      "event.date": "2000-01-01",
+      "fundraiser.endDate": "2000-01-01",
+    };
+    expect(createEventSchema.safeParse(form(past)).success).toBe(false);
+
+    const result = updateEventSchema.safeParse(form(past));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      // Money is still converted to pesewas on update.
+      expect(result.data.fundraiser.targetAmount).toBe(100_000);
+    }
   });
 });

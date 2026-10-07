@@ -163,14 +163,14 @@ Gate: no screen shows sample data or a fake submit handler.
 - [x] Campaign updates: an `Update` model, organiser posting UI, list on the event page (the Updates tab lists real posts; the organiser sees a post form; `GET/POST /api/events/[id]/updates`, owner-only create/delete)
 - [x] Discover page: search, category, sort and goal range driven by URL search params, with pagination (`searchEvents` + `parseDiscoverParams`/`buildDiscoverWhere`; a `DiscoverFilters` client component writes the filters to the URL so results are shareable and server-rendered; 9 per page)
 - [x] Home page "featured" limited and curated instead of loading every event (`featuredEvents` returns the few most active current campaigns)
-- [ ] Share button (Web Share API with copy-link fallback); per-event `generateMetadata` and Open Graph image
+- [x] Share button (Web Share API with copy-link fallback); per-event `generateMetadata` and Open Graph image (`ShareButton` component; the event page sets title/description/OG/Twitter tags from the event and its image)
 - [ ] Close / archive campaign UI (replace the empty `delete-event-button.tsx`)
 - [ ] Profile page that saves: name, avatar upload, password change
 - [ ] Email verification and a real password reset using the existing `VerificationToken` table
 - [ ] Transactional email (Resend or Postmark): donation receipt, new-donation alert, payout status, password reset
 - [ ] Contact form that sends email or creates a ticket
 - [x] Dashboard "My donations" linked by `userId` when signed in (no longer matched by the email typed at checkout)
-- [ ] Edit rules: lock target and minimum after the first donation; allow editing events whose date has passed
+- [x] Edit rules: lock target and minimum after the first donation; allow editing events whose date has passed (`updateEventSchema` permits past dates; `updateEvent` refuses a changed target/minimum once a donation exists)
 - [ ] Toasts instead of `alert()`; `error.tsx`, `not-found.tsx` and loading states; react-hook-form with shared schemas
 - [ ] GH₵ everywhere via one formatter (some screens show $ today)
 

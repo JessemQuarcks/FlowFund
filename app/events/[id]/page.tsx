@@ -9,14 +9,48 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, Calendar, Clock, Share2, Users } from "lucide-react";
+import type { Metadata } from "next";
+import { ArrowLeft, Calendar, Clock, Users } from "lucide-react";
 import { DonationForm } from "@/components/donation-form";
 import { DonorsList } from "@/components/donors-list";
 import { EventUpdates } from "@/components/event-updates";
+import { ShareButton } from "@/components/share-button";
 import { prisma } from "@/lib/prisma"; // Import prisma client
 import { formatMoney } from "@/lib/money";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const event = await prisma.event.findUnique({
+    where: { id },
+    include: { fundraiser: { select: { image: true } } },
+  });
+  if (!event) return { title: "Event not found · FlowFund" };
+
+  const description = event.description.slice(0, 160);
+  const images = event.fundraiser?.image ? [event.fundraiser.image] : [];
+  return {
+    title: `${event.title} · FlowFund`,
+    description,
+    openGraph: {
+      title: event.title,
+      description,
+      images,
+      type: "website",
+    },
+    twitter: {
+      card: images.length ? "summary_large_image" : "summary",
+      title: event.title,
+      description,
+      images,
+    },
+  };
+}
 
 export default async function EventPage({
   params,
@@ -118,13 +152,7 @@ export default async function EventPage({
             <h1 className="text-3xl font-bold green-text-gradient">
               {event.title}
             </h1>
-            <Button
-              variant="outline"
-              size="icon"
-              className="border-primary-200 hover:bg-primary-50 hover:text-primary-700"
-            >
-              <Share2 className="h-4 w-4" />
-            </Button>
+            <ShareButton title={event.title} />
           </div>
 
           <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">

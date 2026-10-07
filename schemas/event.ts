@@ -36,3 +36,25 @@ export const createEventSchema = zfd.formData({
 });
 
 export type CreateEventInput = z.infer<typeof createEventSchema>;
+
+// Editing an existing event. Unlike create, the dates may be in the past, so
+// an event whose date has already passed can still be edited. Changes to the
+// target and minimum are allowed through here but rejected by the service once
+// the fundraiser has a donation (see updateEvent).
+export const updateEventSchema = zfd.formData({
+  event: z.object({
+    category: z.nativeEnum(Event_Category),
+    description: zfd.text(),
+    title: zfd.text(),
+    date: zfd.text(z.string().pipe(z.coerce.date())),
+    image: zfd.file(z.instanceof(File).optional()),
+  }),
+  fundraiser: z.object({
+    targetAmount: zfd.numeric(z.number().min(1).transform(toMinorUnits)),
+    anonymity: zfd.checkbox(),
+    minimumAmount: zfd.numeric(z.number().min(0.1).transform(toMinorUnits)),
+    endDate: zfd.text(z.string().pipe(z.coerce.date())),
+  }),
+});
+
+export type UpdateEventInput = z.infer<typeof updateEventSchema>;
