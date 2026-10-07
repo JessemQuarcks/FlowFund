@@ -130,6 +130,26 @@ describe("requestWithdrawal", () => {
     );
   });
 
+  it("records the reservation in the append-only audit log", async () => {
+    const { user, fundraiser, account } = await fundedSetup(10_000);
+
+    const w = await requestWithdrawal(user.id, {
+      fundraiserId: fundraiser.id,
+      payoutAccountId: account.id,
+      amount: 50,
+    });
+
+    const log = await prisma.auditLog.findFirstOrThrow({
+      where: { action: "withdrawal.reserved" },
+    });
+    expect(log).toMatchObject({
+      amount: -5_000, // debited from the available balance
+      withdrawalId: w.id,
+      actorUserId: user.id,
+      fundraiserId: fundraiser.id,
+    });
+  });
+
   it("refuses to overdraw and leaves the balance untouched", async () => {
     const { user, fundraiser, account } = await fundedSetup(10_000);
 
@@ -232,6 +252,13 @@ describe("finalizeTransfer", () => {
     });
     expect(w.status).toBe("FAILED");
     expect(await totalWithdrawn(fundraiser.id)).toBe(0);
+
+    // The release is logged once, with the funds returned to the balance.
+    const released = await prisma.auditLog.findMany({
+      where: { action: "withdrawal.failed", reference },
+    });
+    expect(released).toHaveLength(1);
+    expect(released[0].amount).toBe(5_000);
   });
 
   it("releases the funds when a completed transfer is reversed", async () => {

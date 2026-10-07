@@ -40,12 +40,23 @@ async function releaseReservation(
   id: string,
   fundraiserId: string,
   amount: number,
+  reference: string,
 ) {
   await prisma.$transaction([
     prisma.withdrawal.update({ where: { id }, data: { status: "FAILED" } }),
     prisma.fundraiser.update({
       where: { id: fundraiserId },
       data: { totalWithdrawn: { decrement: amount } },
+    }),
+    prisma.auditLog.create({
+      data: {
+        action: "withdrawal.released",
+        fundraiserId,
+        withdrawalId: id,
+        amount, // funds returned to the available balance
+        reference,
+        detail: { reason: "transfer_rejected" },
+      },
     }),
   ]);
 }
@@ -114,6 +125,19 @@ export async function requestWithdrawal(
         data: { totalWithdrawn: { increment: amount } },
       });
 
+      await tx.auditLog.create({
+        data: {
+          action: "withdrawal.reserved",
+          actorUserId: userId,
+          fundraiserId: fundraiser.id,
+          withdrawalId: created.id,
+          amount: -amount, // debited from the available balance
+          currency: fundraiser.currency,
+          reference,
+          detail: { payoutAccountId: payoutAccount.id },
+        },
+      });
+
       return created;
     },
     { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
@@ -131,7 +155,7 @@ export async function requestWithdrawal(
       currency: fundraiser.currency,
     });
   } catch (error) {
-    await releaseReservation(withdrawal.id, fundraiser.id, amount);
+    await releaseReservation(withdrawal.id, fundraiser.id, amount, reference);
     throw error;
   }
 
@@ -172,16 +196,32 @@ export async function finalizeTransfer(
       data: { status: target },
     });
 
-    if (wasReserved && !willReserve) {
+    const released = wasReserved && !willReserve;
+    const reReserved = !wasReserved && willReserve;
+    if (released) {
       await tx.fundraiser.update({
         where: { id: w.fundraiserId },
         data: { totalWithdrawn: { decrement: w.amount } },
       });
-    } else if (!wasReserved && willReserve) {
+    } else if (reReserved) {
       await tx.fundraiser.update({
         where: { id: w.fundraiserId },
         data: { totalWithdrawn: { increment: w.amount } },
       });
     }
+
+    await tx.auditLog.create({
+      data: {
+        action: `withdrawal.${target.toLowerCase()}`,
+        fundraiserId: w.fundraiserId,
+        withdrawalId: w.id,
+        // Signed balance effect: funds returned (+) when released, taken (−)
+        // if a terminal state is undone, otherwise no change.
+        amount: released ? w.amount : reReserved ? -w.amount : null,
+        currency: w.currency,
+        reference,
+        detail: { outcome, from: w.status, to: target },
+      },
+    });
   });
 }

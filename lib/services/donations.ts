@@ -202,6 +202,18 @@ export async function recordDonationByReference(
           });
         }
 
+        await tx.auditLog.create({
+          data: {
+            action: "donation.recorded",
+            fundraiserId: fundraiser.id,
+            donationId: created.id,
+            amount, // credited to the raised total
+            currency: fundraiser.currency,
+            reference,
+            detail: { anonymous: metadata.is_anonymous, newDonor: isNewDonor },
+          },
+        });
+
         return created;
       },
       // READ COMMITTED so the donor count, read after the fundraiser lock is

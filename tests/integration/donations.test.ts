@@ -209,6 +209,16 @@ describe("recordDonationByReference", () => {
       raisedAmount: 5_000,
       donorCount: 1,
     });
+
+    // The movement is recorded in the append-only audit log.
+    const log = await prisma.auditLog.findFirstOrThrow({
+      where: { action: "donation.recorded" },
+    });
+    expect(log).toMatchObject({
+      amount: 5_000,
+      donationId: donation.id,
+      fundraiserId: fundraiser.id,
+    });
   });
 
   it("counts a replayed reference once", async () => {

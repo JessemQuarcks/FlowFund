@@ -4,8 +4,10 @@ import { prisma } from "@/lib/prisma";
 export async function resetDatabase() {
   // Children before parents: the foreign keys have no cascade.
   await prisma.$transaction([
+    prisma.auditLog.deleteMany(),
     prisma.donation.deleteMany(),
     prisma.withdrawal.deleteMany(),
+    prisma.payoutAccount.deleteMany(),
     prisma.fundraiser.deleteMany(),
     prisma.event.deleteMany(),
     prisma.session.deleteMany(),

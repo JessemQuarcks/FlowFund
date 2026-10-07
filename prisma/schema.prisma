@@ -178,6 +178,31 @@ model PayoutAccount {
   @@unique([userId, recipientCode])
 }
 
+// Append-only record of every money movement (and, later, admin actions).
+// The services only ever create rows here, inside the same transaction as the
+// movement, so the log cannot disagree with the balances. Never updated or
+// deleted.
+model AuditLog {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  // A dotted action name, e.g. "donation.recorded", "withdrawal.reserved".
+  action String
+  // Who caused it: a user id, or null for a provider webhook / system job.
+  actorUserId String?
+  fundraiserId String?
+  donationId String?
+  withdrawalId String?
+  // Signed pesewa change to the fundraiser's recorded balance where that is
+  // meaningful (a donation is positive, a reserved withdrawal negative).
+  amount Int?
+  currency String?
+  detail Json
+  reference String?
+
+  @@index([fundraiserId])
+  @@index([withdrawalId])
+}
+
 enum Withdrawal_Status {
   PENDING
   PROCESSING
