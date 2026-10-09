@@ -8,7 +8,7 @@ import {
   Compass,
   LayoutDashboard,
   Info,
-  Menu,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -18,177 +18,141 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+
+const NAV = [
+  { href: "/", label: "Home" },
+  { href: "/events", label: "Discover" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/about", label: "About" },
+];
+
+function BrandMark() {
+  return (
+    <Link href="/" className="flex items-center gap-2">
+      <span className="brand-gradient flex h-8 w-8 items-center justify-center rounded-lg text-white shadow-soft">
+        <TrendingUp className="h-5 w-5" />
+      </span>
+      <span className="text-xl font-bold tracking-tight brand-text-gradient">
+        FlowFund
+      </span>
+    </Link>
+  );
+}
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const data = useSession();
-  const session = data?.data;
-
-  const isActive = (path: string) => {
-    return pathname === path;
-  };
-
-  // Extract first name from the user's name
+  const session = useSession()?.data;
   const firstName = session?.user?.name?.split(" ")[0] || "User";
+  const isActive = (path: string) =>
+    path === "/" ? pathname === "/" : pathname.startsWith(path);
+
+  const accountMenu = session?.user ? (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+          <Avatar className="h-9 w-9 ring-2 ring-primary/20">
+            <AvatarImage
+              src={session.user.image || undefined}
+              alt={session.user.name || undefined}
+            />
+            <AvatarFallback className="bg-primary-100 text-primary-700">
+              {firstName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end" forceMount>
+        <div className="px-2 py-1.5 text-sm">
+          <p className="font-medium">{session.user.name}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {session.user.email}
+          </p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/dashboard">Dashboard</Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/profile">Profile</Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/api/auth/signout">Log out</Link>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  ) : null;
 
   return (
     <>
-      {/* Mobile Top Logo - Hidden on homepage */}
-      <div
-        className={`sticky top-0 z-10 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b md:hidden`}
-      >
-        <div className="container py-3 flex justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary-600" />
-            <span className="text-xl font-bold green-text-gradient">
-              FundFlow
-            </span>
-          </div>
-          <div className="flex items-center gap-4">
+      {/* Mobile top bar */}
+      <div className="sticky top-0 z-40 w-full border-b glass md:hidden">
+        <div className="container flex items-center justify-between py-3">
+          <BrandMark />
+          <div className="flex items-center gap-3">
             <ThemeToggle />
-
-            {session?.user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={session.user.image || undefined}
-                        alt={session.user.name || undefined}
-                      />
-                      <AvatarFallback>
-                        {firstName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/api/auth/signout">Log out</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <>
-                <Link href="/signin">
-                  <Button variant="outline" size="sm">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/signup">
-                  <Button size="sm" variant="gradient">
-                    Sign Up
-                  </Button>
-                </Link>
-              </>
+            {accountMenu ?? (
+              <Link href="/signup">
+                <Button size="sm" variant="gradient">
+                  Sign Up
+                </Button>
+              </Link>
             )}
           </div>
         </div>
       </div>
 
-      {/* Desktop Header */}
-      <header className="sticky top-0 z-10 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 hidden md:block">
+      {/* Desktop header */}
+      <header className="sticky top-0 z-40 hidden w-full border-b glass md:block">
         <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary-600" />
-            <span className="text-xl font-bold green-text-gradient">
-              FundFlow
-            </span>
-          </div>
-          <nav className="flex gap-6">
-            <Link
-              href="/"
-              className={`text-sm font-medium ${
-                isActive("/") ? "text-primary-600" : "text-muted-foreground"
-              }`}
-            >
-              Home
-            </Link>
-            <Link
-              href="/events"
-              className={`text-sm font-medium ${
-                isActive("/events")
-                  ? "text-primary-600"
-                  : "text-muted-foreground"
-              }`}
-            >
-              Discover
-            </Link>
-            <Link
-              href="/dashboard"
-              className={`text-sm font-medium ${
-                isActive("/dashboard")
-                  ? "text-primary-600"
-                  : "text-muted-foreground"
-              }`}
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/about"
-              className={`text-sm font-medium ${
-                isActive("/about")
-                  ? "text-primary-600"
-                  : "text-muted-foreground"
-              }`}
-            >
-              About
-            </Link>
+          <BrandMark />
+          <nav className="flex items-center gap-1">
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  "relative rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  isActive(item.href)
+                    ? "text-primary-700 dark:text-primary-300"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {item.label}
+                <span
+                  className={cn(
+                    "absolute inset-x-3 -bottom-px h-0.5 origin-left rounded-full bg-primary-600 transition-transform duration-300",
+                    isActive(item.href) ? "scale-x-100" : "scale-x-0",
+                  )}
+                />
+              </Link>
+            ))}
           </nav>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <ThemeToggle />
-
             {session?.user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-8 w-8 rounded-full"
-                  >
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage
-                        src={session.user.image || undefined}
-                        alt={session.user.name || undefined}
-                      />
-                      <AvatarFallback>
-                        {firstName.charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
+              <>
+                <Link href="/events/create">
+                  <Button size="sm" variant="gradient" className="gap-1.5">
+                    <Plus className="h-4 w-4" /> Start
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end" forceMount>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard">Dashboard</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/profile">Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/api/auth/signout">Log out</Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </Link>
+                {accountMenu}
+              </>
             ) : (
               <>
                 <Link href="/signin">
-                  <Button variant="outline" size="sm">
+                  <Button variant="ghost" size="sm">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/signup">
                   <Button size="sm" variant="gradient">
-                    Sign Up
+                    Start a fundraiser
                   </Button>
                 </Link>
               </>
@@ -197,47 +161,27 @@ export function SiteHeader() {
         </div>
       </header>
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-t">
+      {/* Mobile bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t glass md:hidden">
         <div className="container flex justify-around py-2">
-          <Link
-            href="/"
-            className={`flex flex-col items-center p-2 ${
-              isActive("/") ? "text-primary-600" : "text-muted-foreground"
-            }`}
-          >
-            <Home className="h-5 w-5" />
-            <span className="text-xs mt-1">Home</span>
-          </Link>
-          <Link
-            href="/events"
-            className={`flex flex-col items-center p-2 ${
-              isActive("/events") ? "text-primary-600" : "text-muted-foreground"
-            }`}
-          >
-            <Compass className="h-5 w-5" />
-            <span className="text-xs mt-1">Discover</span>
-          </Link>
-          <Link
-            href="/dashboard"
-            className={`flex flex-col items-center p-2 ${
-              isActive("/dashboard")
-                ? "text-primary-600"
-                : "text-muted-foreground"
-            }`}
-          >
-            <LayoutDashboard className="h-5 w-5" />
-            <span className="text-xs mt-1">Dashboard</span>
-          </Link>
-          <Link
-            href="/about"
-            className={`flex flex-col items-center p-2 ${
-              isActive("/about") ? "text-primary-600" : "text-muted-foreground"
-            }`}
-          >
-            <Info className="h-5 w-5" />
-            <span className="text-xs mt-1">About</span>
-          </Link>
+          {[
+            { href: "/", label: "Home", icon: Home },
+            { href: "/events", label: "Discover", icon: Compass },
+            { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { href: "/about", label: "About", icon: Info },
+          ].map(({ href, label, icon: Icon }) => (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                "flex flex-col items-center rounded-lg p-2 transition-colors",
+                isActive(href) ? "text-primary-600" : "text-muted-foreground",
+              )}
+            >
+              <Icon className="h-5 w-5" />
+              <span className="mt-1 text-[11px]">{label}</span>
+            </Link>
+          ))}
         </div>
       </nav>
     </>

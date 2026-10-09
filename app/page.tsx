@@ -1,288 +1,417 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { MoveRight, TrendingUp, Users } from "lucide-react";
-import { EventWithDaysLeft } from "@/types";
+  ArrowRight,
+  BadgeCheck,
+  HeartHandshake,
+  LineChart,
+  Lock,
+  MoveRight,
+  Rocket,
+  ShieldCheck,
+  Sparkles,
+  Timer,
+  Wallet,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Reveal } from "@/components/reveal";
+import { CountUp } from "@/components/count-up";
+import { AnimatedProgress } from "@/components/animated-progress";
+import {
+  CampaignCard,
+  type CampaignCardData,
+} from "@/components/campaign-card";
+import { featuredEvents, platformStats } from "@/lib/services/events";
 import { formatMoney } from "@/lib/money";
-import { featuredEvents } from "@/lib/services/events";
+
+const compactGHS = (pesewas: number) =>
+  new Intl.NumberFormat("en-GH", {
+    style: "currency",
+    currency: "GHS",
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(pesewas / 100);
+
+const HOW_IT_WORKS = [
+  {
+    icon: Rocket,
+    title: "Create your campaign",
+    body: "Tell your story, set a goal and add a cover photo in minutes. No fees to start.",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Share and raise",
+    body: "Share your link anywhere. Supporters give securely with card or mobile money.",
+  },
+  {
+    icon: Wallet,
+    title: "Withdraw to your account",
+    body: "Funds settle to your verified bank or MoMo account after your campaign ends.",
+  },
+];
+
+const TRUST = [
+  {
+    icon: BadgeCheck,
+    title: "Verified organisers",
+    body: "Campaigns from verified organisers carry a badge so donors give with confidence.",
+  },
+  {
+    icon: Lock,
+    title: "Secure payments",
+    body: "Every donation is processed by Paystack. We never touch or store card details.",
+  },
+  {
+    icon: LineChart,
+    title: "Transparent ledger",
+    body: "Every cedi raised and withdrawn is recorded and reconciled to the pesewa.",
+  },
+  {
+    icon: Timer,
+    title: "Fast, fair payouts",
+    body: "Withdraw to bank or mobile money with a clear, flat platform fee — no surprises.",
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    quote:
+      "We rebuilt ten market stalls in under two weeks. FlowFund made it easy for people everywhere to help.",
+    name: "Esi Bonsu",
+    role: "Kejetia traders' fund",
+  },
+  {
+    quote:
+      "The transparency won people over. Donors could see exactly where every cedi went.",
+    name: "Kwame Nkansah",
+    role: "Osu Community School",
+  },
+  {
+    quote:
+      "Mobile money payouts landed the same week. I could focus on Ama's treatment, not paperwork.",
+    name: "Ama Serwaa",
+    role: "Help Ama Beat Leukemia",
+  },
+];
 
 export default async function Home() {
-  // A small, curated set — the most active current campaigns — not every
-  // event in the database.
-  const featured = await featuredEvents(3);
+  const [featured, stats] = await Promise.all([
+    featuredEvents(6),
+    platformStats(),
+  ]);
 
-  const events: EventWithDaysLeft[] = featured.map((e) => ({
-    ...e,
-    daysLeft: e.fundraiser?.endDate
-      ? Math.max(
-          0,
-          Math.ceil(
-            (new Date(e.fundraiser.endDate).getTime() - Date.now()) /
-              (1000 * 60 * 60 * 24),
-          ),
-        )
-      : 0,
-  }));
+  const cards: CampaignCardData[] = featured
+    .filter((e) => e.fundraiser)
+    .map((e) => ({
+      id: e.id,
+      title: e.title,
+      description: e.description,
+      category: e.category,
+      image: e.fundraiser!.image,
+      raisedAmount: e.fundraiser!.raisedAmount,
+      targetAmount: e.fundraiser!.targetAmount,
+      currency: e.fundraiser!.currency,
+      donorCount: e.fundraiser!.donorCount,
+      endDate: e.fundraiser!.endDate,
+      organiserName: e.user?.name,
+      verified: e.user?.isVerifiedOrganiser,
+    }));
+
+  const hero = cards[0];
+  const heroPct = hero
+    ? Math.min(100, Math.round((hero.raisedAmount / hero.targetAmount) * 100))
+    : 0;
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <main className="flex-1">
-        <section className="w-full py-12 md:py-24 lg:py-32 hero-pattern">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-2 lg:gap-12 items-center">
-              <div className="space-y-4">
-                <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                  <span className="green-text-gradient">Raise funds</span> for
-                  what matters to you
-                </h1>
-                <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                  Create fundraising events, set targets, and track donations in
-                  real-time. Make a difference with FundFlow.
-                </p>
-                <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                  <Link href="/events/create">
-                    <Button size="lg" className="gap-1" variant="gradient">
-                      Start Fundraising <MoveRight className="h-4 w-4" />
-                    </Button>
-                  </Link>
-                  <Link href="/events">
-                    <Button variant="outline" size="lg">
-                      Explore Events
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="absolute -inset-1 rounded-xl bg-green-gradient blur-xl opacity-30"></div>
-                <img
-                  src="/placeholder.svg?height=400&width=600"
-                  alt="Fundraising illustration"
-                  className="relative mx-auto aspect-video overflow-hidden rounded-xl object-cover"
-                  width={600}
-                  height={400}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32">
-          <div className="container px-4 md:px-6">
-            <div className="flex flex-col items-center justify-center space-y-4 text-center">
-              <div className="space-y-2">
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
-                  <span className="green-text-gradient">Featured</span>{" "}
-                  Fundraisers
-                </h2>
-                <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Discover events that are making a difference in communities
-                  around the world.
-                </p>
-              </div>
-            </div>
-            <div className="mx-auto grid max-w-5xl items-center gap-6 py-12 lg:grid-cols-3">
-              {events.map((event) => (
-                <Card key={event.id} className="overflow-hidden">
-                  <img
-                    src={event.fundraiser?.image || "/placeholder.svg"}
-                    alt={event.title}
-                    className="aspect-video w-full object-cover"
-                    width={400}
-                    height={200}
-                  />
-                  <CardHeader>
-                    <CardTitle>{event.title}</CardTitle>
-                    <CardDescription>{event.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span>
-                            {formatMoney(
-                              event.fundraiser?.raisedAmount ?? 0,
-                              event.fundraiser?.currency,
-                            )}{" "}
-                            raised of{" "}
-                            {formatMoney(
-                              event.fundraiser?.targetAmount ?? 0,
-                              event.fundraiser?.currency,
-                            )}
-                          </span>
-                          <span className="font-medium text-primary-600">
-                            {event.fundraiser
-                              ? Math.round(
-                                  (Number(event.fundraiser.raisedAmount) /
-                                    Number(event.fundraiser.targetAmount)) *
-                                    100,
-                                )
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                        <Progress
-                          value={
-                            event.fundraiser
-                              ? (Number(event.fundraiser.raisedAmount) /
-                                  Number(event.fundraiser.targetAmount)) *
-                                100
-                              : 0
-                          }
-                          className="h-2"
-                        />
-                      </div>
-                      <div className="flex justify-between text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1">
-                          <Users className="h-4 w-4" />
-                          <span>
-                            {event.fundraiser?.donorCount || 0} donors
-                          </span>
-                        </div>
-                        <div>{`${event.daysLeft} days left`}</div>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Link href={`/events/${event.id}`} className="w-full">
-                      <Button className="w-full" variant="gradient-secondary">
-                        Donate Now
-                      </Button>
-                    </Link>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
-            <div className="flex justify-center">
+    <div className="flex flex-col">
+      {/* ---------- Hero ---------- */}
+      <section className="relative overflow-hidden hero-pattern">
+        <div className="pointer-events-none absolute -left-24 top-10 h-72 w-72 rounded-full bg-primary-400/20 blur-3xl" />
+        <div className="pointer-events-none absolute -right-20 bottom-0 h-80 w-80 rounded-full bg-teal-400/20 blur-3xl" />
+        <div className="container relative grid items-center gap-12 py-16 md:py-24 lg:grid-cols-2">
+          <div className="animate-fade-up">
+            <span className="inline-flex items-center gap-2 rounded-full border bg-background/70 px-4 py-1.5 text-sm font-medium text-primary-700 shadow-sm backdrop-blur dark:text-primary-300">
+              <Sparkles className="h-4 w-4" />
+              Verified · Secure · Transparent
+            </span>
+            <h1 className="mt-6 text-4xl font-bold tracking-tight text-balance sm:text-5xl xl:text-6xl">
+              Fund what matters,{" "}
+              <span className="brand-text-gradient">together</span>.
+            </h1>
+            <p className="mt-5 max-w-xl text-lg text-muted-foreground">
+              Raise money for medical bills, school fees, emergencies and
+              community projects across Ghana. Start in minutes, share
+              everywhere, and withdraw securely.
+            </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/events/create">
+                <Button size="lg" variant="gradient" className="group gap-2">
+                  Start a fundraiser
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                </Button>
+              </Link>
               <Link href="/events">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="border-primary-300 hover:bg-primary-50 hover:text-primary-700"
-                >
-                  View All Events
+                <Button size="lg" variant="outline" className="gap-2">
+                  Explore campaigns <MoveRight className="h-4 w-4" />
                 </Button>
               </Link>
             </div>
-          </div>
-        </section>
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-950 dark:to-primary-900">
-          <div className="container px-4 md:px-6">
-            <div className="grid gap-6 lg:grid-cols-[1fr_400px] lg:gap-12 xl:grid-cols-[1fr_600px]">
-              <img
-                src="/placeholder.svg?height=400&width=600"
-                alt="How it works illustration"
-                className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
-                width={600}
-                height={400}
-              />
-              <div className="flex flex-col justify-center space-y-4">
-                <div className="space-y-2">
-                  <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-                    How <span className="green-text-gradient">FundFlow</span>{" "}
-                    Works
-                  </h2>
-                  <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Our platform makes fundraising simple, transparent, and
-                    effective.
-                  </p>
-                </div>
-                <ul className="grid gap-6">
-                  <li className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-gradient text-white">
-                      1
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-bold">Create Your Event</h3>
-                      <p className="text-muted-foreground">
-                        Set up your fundraising event with details, target
-                        amount, and a compelling story.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-gradient text-white">
-                      2
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-bold">
-                        Share With Your Network
-                      </h3>
-                      <p className="text-muted-foreground">
-                        Spread the word about your cause through social media
-                        and direct sharing.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-gradient text-white">
-                      3
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-bold">Collect Donations</h3>
-                      <p className="text-muted-foreground">
-                        Receive funds securely with options for anonymous or
-                        visible donor recognition.
-                      </p>
-                    </div>
-                  </li>
-                  <li className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-gradient text-white">
-                      4
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-bold">Withdraw Funds</h3>
-                      <p className="text-muted-foreground">
-                        Access your raised funds easily when you need them for
-                        your event or cause.
-                      </p>
-                    </div>
-                  </li>
-                </ul>
+            <div className="mt-8 flex items-center gap-4">
+              <div className="flex -space-x-3">
+                {["a", "b", "c", "d"].map((s) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={s}
+                    src={`https://picsum.photos/seed/donor-${s}/80/80`}
+                    alt=""
+                    className="h-10 w-10 rounded-full border-2 border-background object-cover"
+                  />
+                ))}
               </div>
+              <p className="text-sm text-muted-foreground">
+                Join{" "}
+                <span className="font-semibold text-foreground">
+                  <CountUp end={stats.donors} />+
+                </span>{" "}
+                donors already giving
+              </p>
             </div>
           </div>
-        </section>
-      </main>
-      <footer className="w-full border-t py-6 bg-primary-50 dark:bg-primary-950">
-        <div className="container flex flex-col items-center justify-between gap-4 md:flex-row">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary-600" />
-            <span className="text-xl font-bold green-text-gradient">
-              FundFlow
-            </span>
+
+          {/* Floating featured preview */}
+          {hero && (
+            <div className="relative lg:pl-8">
+              <div className="animate-float rounded-3xl border bg-card p-3 shadow-elevated">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={hero.image || "/placeholder.svg"}
+                  alt={hero.title}
+                  className="aspect-[16/11] w-full rounded-2xl object-cover"
+                />
+                <div className="p-4">
+                  <div className="flex items-center gap-2 text-xs font-medium text-primary-700 dark:text-primary-300">
+                    <BadgeCheck className="h-4 w-4" />
+                    {hero.verified ? "Verified organiser" : "Live campaign"}
+                  </div>
+                  <h3 className="mt-1 line-clamp-1 text-lg font-semibold">
+                    {hero.title}
+                  </h3>
+                  <div className="mt-3">
+                    <AnimatedProgress value={heroPct} />
+                    <div className="mt-2 flex items-center justify-between text-sm">
+                      <span className="font-semibold">
+                        {formatMoney(hero.raisedAmount, hero.currency)}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {heroPct}% funded
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute -bottom-5 -left-3 hidden rounded-2xl border bg-card px-4 py-3 shadow-elevated sm:block">
+                <p className="text-xs text-muted-foreground">Raised so far</p>
+                <p className="text-lg font-bold brand-text-gradient">
+                  <CountUp
+                    end={stats.totalRaised / 100}
+                    format={() => compactGHS(stats.totalRaised)}
+                  />
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ---------- Stats band ---------- */}
+      <section className="border-y bg-muted/30">
+        <div className="container grid grid-cols-2 gap-6 py-10 md:grid-cols-4">
+          {[
+            {
+              label: "Raised on FlowFund",
+              node: (
+                <CountUp
+                  end={stats.totalRaised / 100}
+                  format={() => compactGHS(stats.totalRaised)}
+                />
+              ),
+            },
+            {
+              label: "Active campaigns",
+              node: <CountUp end={stats.campaigns} />,
+            },
+            {
+              label: "Generous donors",
+              node: (
+                <>
+                  <CountUp end={stats.donors} />+
+                </>
+              ),
+            },
+            { label: "Payment uptime", node: <>99.9%</> },
+          ].map((s, i) => (
+            <Reveal key={s.label} delay={i * 80} className="text-center">
+              <div className="text-3xl font-bold tracking-tight brand-text-gradient sm:text-4xl">
+                {s.node}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                {s.label}
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------- Featured campaigns ---------- */}
+      <section className="container py-16 md:py-24">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
+          <div>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              <span className="brand-text-gradient">Featured</span> fundraisers
+            </h2>
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              Real causes making a difference in communities across Ghana right
+              now.
+            </p>
           </div>
-          <p className="text-center text-sm text-muted-foreground md:text-left">
-            © {new Date().getFullYear()} FundFlow. All rights reserved.
-          </p>
-          <div className="flex gap-4">
-            <Link
-              href="/terms"
-              className="text-sm text-muted-foreground hover:text-primary-600 hover:underline"
-            >
-              Terms
-            </Link>
-            <Link
-              href="/privacy"
-              className="text-sm text-muted-foreground hover:text-primary-600 hover:underline"
-            >
-              Privacy
-            </Link>
-            <Link
-              href="/contact"
-              className="text-sm text-muted-foreground hover:text-primary-600 hover:underline"
-            >
-              Contact
-            </Link>
+          <Link href="/events">
+            <Button variant="outline" className="gap-2">
+              View all <ArrowRight className="h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map((c, i) => (
+            <Reveal key={c.id} delay={(i % 3) * 90}>
+              <CampaignCard campaign={c} />
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ---------- How it works ---------- */}
+      <section className="border-y bg-muted/30">
+        <div className="container py-16 md:py-24">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              How <span className="brand-text-gradient">FlowFund</span> works
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              From idea to payout in three simple steps.
+            </p>
+          </Reveal>
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
+            {HOW_IT_WORKS.map((step, i) => (
+              <Reveal key={step.title} delay={i * 100}>
+                <div className="relative h-full rounded-2xl border bg-card p-6 shadow-soft">
+                  <div className="brand-gradient mb-4 flex h-12 w-12 items-center justify-center rounded-xl text-white shadow-soft">
+                    <step.icon className="h-6 w-6" />
+                  </div>
+                  <span className="absolute right-5 top-5 text-4xl font-bold text-primary-100 dark:text-primary-900/60">
+                    {i + 1}
+                  </span>
+                  <h3 className="text-lg font-semibold">{step.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    {step.body}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
-      </footer>
+      </section>
+
+      {/* ---------- Trust & safety ---------- */}
+      <section className="container py-16 md:py-24">
+        <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr] lg:items-center">
+          <Reveal>
+            <span className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium text-primary-700 dark:text-primary-300">
+              <ShieldCheck className="h-4 w-4" /> Trust &amp; safety
+            </span>
+            <h2 className="mt-5 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+              Built so donors give with confidence
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              Trust is everything in giving. FlowFund verifies organisers,
+              secures every payment and keeps a transparent record of where the
+              money goes — so your generosity reaches the people who need it.
+            </p>
+            <Link href="/events" className="mt-6 inline-block">
+              <Button variant="gradient" className="gap-2">
+                Find a cause to support <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </Reveal>
+          <div className="grid gap-5 sm:grid-cols-2">
+            {TRUST.map((f, i) => (
+              <Reveal key={f.title} delay={i * 80}>
+                <div className="h-full rounded-2xl border bg-card p-5 shadow-soft card-hover">
+                  <f.icon className="h-6 w-6 text-primary-600" />
+                  <h3 className="mt-3 font-semibold">{f.title}</h3>
+                  <p className="mt-1.5 text-sm text-muted-foreground">
+                    {f.body}
+                  </p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Testimonials ---------- */}
+      <section className="border-y bg-muted/30">
+        <div className="container py-16 md:py-24">
+          <Reveal className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Loved by organisers and donors
+            </h2>
+          </Reveal>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {TESTIMONIALS.map((t, i) => (
+              <Reveal key={t.name} delay={i * 90}>
+                <figure className="flex h-full flex-col rounded-2xl border bg-card p-6 shadow-soft">
+                  <div className="text-4xl leading-none text-primary-300">
+                    “
+                  </div>
+                  <blockquote className="-mt-2 flex-1 text-sm leading-relaxed">
+                    {t.quote}
+                  </blockquote>
+                  <figcaption className="mt-4 border-t pt-4">
+                    <div className="font-semibold">{t.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {t.role}
+                    </div>
+                  </figcaption>
+                </figure>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ---------- Final CTA ---------- */}
+      <section className="container py-16 md:py-24">
+        <Reveal className="brand-gradient animate-gradient relative overflow-hidden rounded-3xl px-8 py-14 text-center text-white shadow-glow md:py-20">
+          <div className="pointer-events-none absolute inset-0 bg-grid opacity-20" />
+          <div className="relative">
+            <h2 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
+              Your cause deserves to be heard
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-white/90">
+              Start a fundraiser in minutes. It&apos;s free to create, and
+              you&apos;ll have the tools to reach your goal.
+            </p>
+            <Link href="/events/create" className="mt-8 inline-block">
+              <Button
+                size="lg"
+                className="gap-2 bg-white text-primary-700 hover:bg-white/90"
+              >
+                Start your fundraiser <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </Reveal>
+      </section>
     </div>
   );
 }

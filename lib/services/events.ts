@@ -138,13 +138,30 @@ export async function searchEvents(params: DiscoverParams) {
 
 // A small, curated set for the home page: the most active current campaigns,
 // not every event in the database.
-export async function featuredEvents(limit = 3) {
+export async function featuredEvents(limit = 6) {
   return prisma.event.findMany({
     where: { fundraiser: { is: { endDate: { gt: new Date() } } } },
     orderBy: { fundraiser: { donorCount: "desc" } },
     take: limit,
-    include: { fundraiser: true },
+    include: {
+      fundraiser: true,
+      user: { select: { name: true, isVerifiedOrganiser: true } },
+    },
   });
+}
+
+// Platform-wide totals for the home page stats band.
+export async function platformStats() {
+  const [raised, campaigns, donors] = await Promise.all([
+    prisma.fundraiser.aggregate({ _sum: { raisedAmount: true } }),
+    prisma.event.count(),
+    prisma.fundraiser.aggregate({ _sum: { donorCount: true } }),
+  ]);
+  return {
+    totalRaised: raised._sum.raisedAmount ?? 0, // pesewas
+    campaigns,
+    donors: donors._sum.donorCount ?? 0,
+  };
 }
 
 export async function getOwnedEvent(
