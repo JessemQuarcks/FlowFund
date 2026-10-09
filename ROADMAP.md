@@ -180,10 +180,10 @@ Gate: written legal sign-off on the operating model, and no payout possible to a
 
 UI revamp + demo (2026-10-09): the product was restyled to a professional, animated design system (FlowFund brand, motion primitives, reusable CampaignCard; home, discover and campaign detail rebuilt) and a rich seed (`npm run db:seed`) now renders nine realistic campaigns. See the design-system foundation in `app/globals.css` and `components/{reveal,count-up,animated-progress,campaign-card}`.
 
-- [~] Organiser verification before the first payout — **data + trust signal done** (`User.isVerifiedOrganiser`, shown as a Verified badge on cards and campaign pages, seeded for demo). Still to do: the KYC submission/review flow (ID, phone, payout-account name match) and **enforcing** it before payout.
-- [ ] Admin console: review and suspend campaigns, approve payouts above a threshold, issue refunds, ban users
-- [ ] Report-a-campaign flow and basic moderation of titles, descriptions and images
-- [ ] Campaign lifecycle: `DRAFT → PENDING_REVIEW → ACTIVE → ENDED / SUSPENDED`
+- [x] Organiser verification before the first payout — KYC submission (`/verify`) → admin review (approve/reject) → Verified badge, and `requestWithdrawal` now **refuses an unverified organiser**. Still to do: payout-account-name matching the verified name, and ID-document upload.
+- [~] Admin console at `/admin` (role-guarded): review and **suspend/reinstate campaigns**, approve/reject verifications, resolve reports and **ban/unban users**, with every action in the audit log. Still to do: an approve-payouts-above-a-threshold queue and admin-initiated refunds (refunds are a Phase 2 follow-up).
+- [x] Report-a-campaign flow and basic moderation (public report dialog → admin queue → suspend/dismiss). Automated title/description/image scanning is a later enhancement.
+- [~] Campaign lifecycle: `Event.status` (`DRAFT/PENDING_REVIEW/ACTIVE/ENDED/SUSPENDED`) added and enforced for SUSPENDED (hidden, no donations); a pre-publish `PENDING_REVIEW` gate on creation is still optional/off.
 - [ ] Lawyer-reviewed Terms, Privacy Policy and refund policy (current pages are template text dated May 2023)
 - [ ] Confirm with counsel whether holding and disbursing donor funds needs a Bank of Ghana licence or a licensed partner (Payment Systems and Services Act, 2019, Act 987), and register with the Data Protection Commission (Data Protection Act, 2012, Act 843)
 - [ ] Confirm Paystack approves crowdfunding on the merchant account (the withdrawal code already notes the account must be upgraded to a registered business)
