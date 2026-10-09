@@ -28,6 +28,8 @@ export type EventWithFundraiserAndUser = Prisma.EventGetPayload<{
       select: {
         id: true;
         name: true;
+        image: true;
+        isVerifiedOrganiser: true;
       };
     };
   };

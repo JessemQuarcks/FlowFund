@@ -1,24 +1,38 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Metadata } from "next";
-import { ArrowLeft, Calendar, Clock, Users } from "lucide-react";
+import {
+  ArrowLeft,
+  BadgeCheck,
+  CalendarDays,
+  Clock,
+  ShieldCheck,
+  Tag,
+  Users,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DonationForm } from "@/components/donation-form";
 import { DonorsList } from "@/components/donors-list";
 import { EventUpdates } from "@/components/event-updates";
 import { ShareButton } from "@/components/share-button";
-import { prisma } from "@/lib/prisma"; // Import prisma client
+import { AnimatedProgress } from "@/components/animated-progress";
+import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/money";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  COMMUNITY: "Community",
+  EDUCATIONAL: "Education",
+  ENVIRONMENT: "Environment",
+  MEDICAL: "Medical",
+  NONPROFIT: "Nonprofit",
+  EMERGENCY: "Emergency",
+  ANIMALS: "Animals",
+  OTHER: "Other",
+};
 
 export async function generateMetadata({
   params,
@@ -30,19 +44,14 @@ export async function generateMetadata({
     where: { id },
     include: { fundraiser: { select: { image: true } } },
   });
-  if (!event) return { title: "Event not found · FlowFund" };
+  if (!event) return { title: "Event not found" };
 
   const description = event.description.slice(0, 160);
   const images = event.fundraiser?.image ? [event.fundraiser.image] : [];
   return {
-    title: `${event.title} · FlowFund`,
+    title: event.title,
     description,
-    openGraph: {
-      title: event.title,
-      description,
-      images,
-      type: "website",
-    },
+    openGraph: { title: event.title, description, images, type: "website" },
     twitter: {
       card: images.length ? "summary_large_image" : "summary",
       title: event.title,
@@ -57,25 +66,17 @@ export default async function EventPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // No need to await params, it's already available
   const { id } = await params;
-  // Fetch the event and its associated fundraiser from the database
   const event = await prisma.event.findUnique({
-    where: {
-      id: id,
-    },
+    where: { id },
     include: {
-      fundraiser: {
-        omit: {
-          dateAdded: true,
-          dateUpdated: true,
-        },
-      }, // Include the related fundraiser data
-      // Only public fields: `event` is passed to the client DonationForm.
+      fundraiser: { omit: { dateAdded: true, dateUpdated: true } },
       user: {
         select: {
           id: true,
           name: true,
+          image: true,
+          isVerifiedOrganiser: true,
         },
       },
     },
@@ -84,283 +85,180 @@ export default async function EventPage({
   const session = await getServerSession(authOptions);
   const isOwner = !!session?.user?.id && session.user.id === event?.userId;
 
-  // Handle case where event is not found
   if (!event) {
     return (
-      <div className="container py-8 text-center">
-        <h1 className="text-3xl font-bold">Event Not Found</h1>
-        <p className="text-muted-foreground">
-          The event you are looking for does not exist.
+      <div className="container py-20 text-center">
+        <h1 className="text-3xl font-bold">Campaign not found</h1>
+        <p className="mt-2 text-muted-foreground">
+          The campaign you&apos;re looking for doesn&apos;t exist.
         </p>
-        <Link href="/events" className="mt-4 inline-block">
-          <Button>Back to Events</Button>
+        <Link href="/events" className="mt-6 inline-block">
+          <Button variant="gradient">Browse fundraisers</Button>
         </Link>
       </div>
     );
   }
 
-  // Calculate progress and days left dynamically
-  const progress = event.fundraiser
-    ? Math.round(
-        (Number(event.fundraiser.raisedAmount) /
-          Number(event.fundraiser.targetAmount)) *
-          100,
-      )
+  const f = event.fundraiser;
+  const progress = f
+    ? Math.min(100, Math.round((f.raisedAmount / f.targetAmount) * 100))
     : 0;
-
-  const daysLeft = event.fundraiser?.endDate
+  const daysLeft = f?.endDate
     ? Math.max(
         0,
         Math.ceil(
-          (new Date(event.fundraiser.endDate).getTime() - Date.now()) /
-            (1000 * 60 * 60 * 24),
+          (new Date(f.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
         ),
       )
     : 0;
-
-  // Format creation date
-  const createdAt = new Date(event.dateAdded).toLocaleDateString("en-US", {
+  const ended = daysLeft <= 0;
+  const createdAt = new Date(event.dateAdded).toLocaleDateString("en-GH", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+  const organiserInitial = (event.user?.name ?? "F").charAt(0).toUpperCase();
 
   return (
-    <div className="container py-8 max-w-5xl">
+    <div className="container max-w-6xl py-8">
       <Link
         href="/events"
-        className="flex items-center gap-2 text-muted-foreground mb-6 hover:text-foreground transition-colors"
+        className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        <span>Back to Events</span>
+        Back to campaigns
       </Link>
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[1.7fr_1fr]">
+        {/* ---------- Main column ---------- */}
         <div className="space-y-6">
-          <div className="relative">
-            <div className="absolute -inset-1 rounded-xl bg-green-gradient blur-md opacity-30"></div>
+          <div className="relative overflow-hidden rounded-2xl border shadow-soft">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={event.fundraiser?.image || "/placeholder.svg"} // Use event image from fundraiser
+              src={f?.image || "/placeholder.svg"}
               alt={event.title}
-              className="relative w-full rounded-lg object-cover aspect-video"
-              width={800}
-              height={400}
+              className="aspect-[16/9] w-full object-cover"
             />
+            <span className="absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-primary-700 shadow-sm backdrop-blur dark:bg-black/60 dark:text-primary-300">
+              <Tag className="h-3.5 w-3.5" />
+              {CATEGORY_LABELS[event.category] ?? event.category}
+            </span>
           </div>
 
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold green-text-gradient">
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               {event.title}
             </h1>
             <ShareButton title={event.title} />
           </div>
 
-          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-4 w-4 text-primary-500" />
-              <span>Created {createdAt}</span>
+          {/* Organiser row */}
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={event.user?.image || undefined} alt="" />
+                <AvatarFallback className="bg-primary-100 text-xs text-primary-700">
+                  {organiserInitial}
+                </AvatarFallback>
+              </Avatar>
+              <span>
+                by{" "}
+                <span className="font-medium text-foreground">
+                  {event.user?.name ?? "Organiser"}
+                </span>
+              </span>
+              {event.user?.isVerifiedOrganiser && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
+                  <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                </span>
+              )}
             </div>
-            {/* You might not have createdBy in your Prisma Event model directly.
-                If it's linked to a User, you'd fetch it. For now, removed or
-                you can keep a placeholder if needed.
-            <div className="flex items-center gap-1">
-              <Users className="h-4 w-4 text-primary-500" />
-              <span>By {event.createdBy}</span>
-            </div>
-            */}
-            <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4 text-primary-500" />
-              <span>{daysLeft} days left</span>
-            </div>
+            <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-4 w-4" /> Created {createdAt}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Clock className="h-4 w-4" />
+              {ended ? "Campaign ended" : `${daysLeft} days left`}
+            </span>
           </div>
 
           <Tabs defaultValue="about">
-            <TabsList className="bg-primary-50 dark:bg-primary-900">
-              <TabsTrigger
-                value="about"
-                className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-800 dark:data-[state=active]:text-primary-300"
-              >
-                About
-              </TabsTrigger>
-              <TabsTrigger
-                value="donors"
-                className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-800 dark:data-[state=active]:text-primary-300"
-              >
-                Donors
-              </TabsTrigger>
-              <TabsTrigger
-                value="updates"
-                className="data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 dark:data-[state=active]:bg-primary-800 dark:data-[state=active]:text-primary-300"
-              >
-                Updates
-              </TabsTrigger>
+            <TabsList>
+              <TabsTrigger value="about">Story</TabsTrigger>
+              <TabsTrigger value="donors">Donors</TabsTrigger>
+              <TabsTrigger value="updates">Updates</TabsTrigger>
             </TabsList>
-            <TabsContent value="about" className="space-y-4">
-              <p>{event.description}</p> {/* Use event.description */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="gradient-card">
-                  <CardHeader>
-                    <CardTitle>Details</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Category</span>
-                      <span className="font-medium text-primary-600">
-                        {event.category}
-                      </span>
-                    </div>
-                    {/* If you have a location field in your Event model, display it here */}
-                    {/* <div className="flex justify-between">
-                      <span className="text-muted-foreground">Location</span>
-                      <span>{event.location}</span>
-                    </div> */}
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Created</span>
-                      <span>{createdAt}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="gradient-card">
-                  <CardHeader>
-                    <CardTitle>Funding</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Target</span>
-                      <span className="font-medium">
-                        {event.fundraiser
-                          ? formatMoney(
-                              event.fundraiser.targetAmount,
-                              event.fundraiser.currency,
-                            )
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Raised</span>
-                      <span className="font-medium text-primary-600">
-                        {event.fundraiser
-                          ? formatMoney(
-                              event.fundraiser.raisedAmount,
-                              event.fundraiser.currency,
-                            )
-                          : "N/A"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Donors</span>
-                      <span>{event.fundraiser?.donorCount || 0}</span>
-                    </div>
-                  </CardContent>
-                </Card>
+            <TabsContent value="about" className="pt-2">
+              <div className="space-y-4 text-[15px] leading-relaxed text-foreground/90">
+                {event.description
+                  .split("\n")
+                  .filter((p) => p.trim())
+                  .map((para, i) => (
+                    <p key={i} className="whitespace-pre-wrap">
+                      {para}
+                    </p>
+                  ))}
               </div>
             </TabsContent>
-            <TabsContent value="donors">
+            <TabsContent value="donors" className="pt-2">
               <DonorsList eventId={event.id} />
             </TabsContent>
-            <TabsContent value="updates">
+            <TabsContent value="updates" className="pt-2">
               <EventUpdates eventId={event.id} isOwner={isOwner} />
             </TabsContent>
           </Tabs>
         </div>
 
-        <div className="space-y-6">
-          <Card className="gradient-card">
-            <CardHeader>
-              <CardTitle>Fundraising Progress</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span>
-                    {formatMoney(
-                      event.fundraiser?.raisedAmount ?? 0,
-                      event.fundraiser?.currency,
-                    )}{" "}
-                    raised of{" "}
-                    {formatMoney(
-                      event.fundraiser?.targetAmount ?? 0,
-                      event.fundraiser?.currency,
-                    )}
+        {/* ---------- Sticky donation column ---------- */}
+        <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+          <Card className="overflow-hidden shadow-elevated">
+            <CardContent className="space-y-5 p-6">
+              <div>
+                <div className="flex items-end justify-between">
+                  <span className="text-3xl font-bold brand-text-gradient">
+                    {formatMoney(f?.raisedAmount ?? 0, f?.currency)}
                   </span>
-                  <span className="font-medium text-primary-600">
+                  <span className="text-sm font-medium text-muted-foreground">
                     {progress}%
                   </span>
                 </div>
-                <Progress value={progress} className="h-2" />
-              </div>
-              <div className="flex justify-between text-sm text-muted-foreground">
-                <div className="flex items-center gap-1">
-                  <Users className="h-4 w-4 text-primary-500" />
-                  <span>{event.fundraiser?.donorCount || 0} donors</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="h-4 w-4 text-primary-500" />
-                  <span>{daysLeft} days left</span>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  raised of {formatMoney(f?.targetAmount ?? 0, f?.currency)}{" "}
+                  goal
+                </p>
+                <div className="mt-3">
+                  <AnimatedProgress value={progress} />
                 </div>
               </div>
-              <DonationForm event={event} />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border bg-muted/40 p-3 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-lg font-bold">
+                    <Users className="h-4 w-4 text-primary-600" />
+                    {(f?.donorCount ?? 0).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground">donors</div>
+                </div>
+                <div className="rounded-xl border bg-muted/40 p-3 text-center">
+                  <div className="flex items-center justify-center gap-1.5 text-lg font-bold">
+                    <Clock className="h-4 w-4 text-primary-600" />
+                    {ended ? "0" : daysLeft}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {ended ? "ended" : "days left"}
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* <Card className="gradient-card">
-            <CardHeader>
-              <CardTitle>Recent Donors</CardTitle>
-            </CardHeader>
-            <CardContent>
-             
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-800 text-primary-700 dark:text-primary-300 flex items-center justify-center">
-                      JD
-                    </div>
-                    <div>
-                      <div className="font-medium">John Doe</div>
-                      <div className="text-xs text-muted-foreground">
-                        2 hours ago
-                      </div>
-                    </div>
-                  </div>
-                  <div className="font-medium text-primary-600">$50</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-800 text-primary-700 dark:text-primary-300 flex items-center justify-center">
-                      AS
-                    </div>
-                    <div>
-                      <div className="font-medium">Anonymous Supporter</div>
-                      <div className="text-xs text-muted-foreground">
-                        5 hours ago
-                      </div>
-                    </div>
-                  </div>
-                  <div className="font-medium text-primary-600">$100</div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-800 text-primary-700 dark:text-primary-300 flex items-center justify-center">
-                      MS
-                    </div>
-                    <div>
-                      <div className="font-medium">Maria Smith</div>
-                      <div className="text-xs text-muted-foreground">
-                        1 day ago
-                      </div>
-                    </div>
-                  </div>
-                  <div className="font-medium text-primary-600">$25</div>
-                </div>
-                <Link
-                  href={`/events/${event.id}/donors`} // Link to a dedicated donors page for this event
-                  className="text-sm text-primary-600 hover:underline block text-center"
-                >
-                  View all donors
-                </Link>
-              </div>
-            </CardContent>
-          </Card> */}
+          <DonationForm event={event} />
+
+          <div className="flex items-center justify-center gap-2 rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+            <ShieldCheck className="h-4 w-4 text-primary-600" />
+            Secure payment via Paystack ·{" "}
+            {formatMoney(f?.minimumAmount ?? 0, f?.currency)} minimum
+          </div>
         </div>
       </div>
     </div>

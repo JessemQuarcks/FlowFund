@@ -23,14 +23,6 @@ import {
 import { featuredEvents, platformStats } from "@/lib/services/events";
 import { formatMoney } from "@/lib/money";
 
-const compactGHS = (pesewas: number) =>
-  new Intl.NumberFormat("en-GH", {
-    style: "currency",
-    currency: "GHS",
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(pesewas / 100);
-
 const HOW_IT_WORKS = [
   {
     icon: Rocket,
@@ -213,7 +205,8 @@ export default async function Home() {
                 <p className="text-lg font-bold brand-text-gradient">
                   <CountUp
                     end={stats.totalRaised / 100}
-                    format={() => compactGHS(stats.totalRaised)}
+                    currency="GHS"
+                    compact
                   />
                 </p>
               </div>
@@ -229,10 +222,7 @@ export default async function Home() {
             {
               label: "Raised on FlowFund",
               node: (
-                <CountUp
-                  end={stats.totalRaised / 100}
-                  format={() => compactGHS(stats.totalRaised)}
-                />
+                <CountUp end={stats.totalRaised / 100} currency="GHS" compact />
               ),
             },
             {

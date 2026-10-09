@@ -121,7 +121,7 @@ export async function searchEvents(params: DiscoverParams) {
       take: perPage,
       include: {
         fundraiser: true,
-        user: { select: { name: true } },
+        user: { select: { name: true, isVerifiedOrganiser: true } },
       },
     }),
     prisma.event.count({ where }),

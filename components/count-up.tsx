@@ -2,15 +2,18 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Counts from 0 up to `end` the first time it scrolls into view. Used for the
-// headline stats. `format` lets the caller render currency/compact numbers.
+// Counts from 0 up to `end` the first time it scrolls into view. Formatting is
+// configured with serializable props (currency / compact / decimals) so this
+// can be rendered from a Server Component without passing a function across the
+// boundary.
 export function CountUp({
   end,
   duration = 1600,
   decimals = 0,
   prefix = "",
   suffix = "",
-  format,
+  currency,
+  compact = false,
   className,
 }: {
   end: number;
@@ -18,7 +21,8 @@ export function CountUp({
   decimals?: number;
   prefix?: string;
   suffix?: string;
-  format?: (value: number) => string;
+  currency?: string;
+  compact?: boolean;
   className?: string;
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
@@ -42,8 +46,7 @@ export function CountUp({
       const start = performance.now();
       const tick = (now: number) => {
         const t = Math.min(1, (now - start) / duration);
-        // easeOutCubic
-        const eased = 1 - Math.pow(1 - t, 3);
+        const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
         setValue(end * eased);
         if (t < 1) requestAnimationFrame(tick);
         else setValue(end);
@@ -59,12 +62,13 @@ export function CountUp({
     return () => observer.disconnect();
   }, [end, duration]);
 
-  const text = format
-    ? format(value)
-    : value.toLocaleString(undefined, {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      });
+  const text = new Intl.NumberFormat("en-GH", {
+    style: currency ? "currency" : "decimal",
+    currency,
+    notation: compact ? "compact" : "standard",
+    minimumFractionDigits: compact ? 0 : decimals,
+    maximumFractionDigits: compact ? 1 : decimals,
+  }).format(value);
 
   return (
     <span ref={ref} className={className}>
