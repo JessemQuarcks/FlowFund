@@ -55,12 +55,15 @@ describe("parseDiscoverParams", () => {
 describe("buildDiscoverWhere", () => {
   const base = { sort: "trending" as const, page: 1 };
 
-  it("is empty with no filters", () => {
-    expect(buildDiscoverWhere(base)).toEqual({});
+  const VISIBLE = { status: { in: ["ACTIVE", "ENDED"] } };
+
+  it("limits to publicly visible campaigns with no filters", () => {
+    expect(buildDiscoverWhere(base)).toEqual(VISIBLE);
   });
 
   it("searches title and description", () => {
     expect(buildDiscoverWhere({ ...base, q: "school" })).toEqual({
+      ...VISIBLE,
       AND: [
         {
           OR: [

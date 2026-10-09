@@ -50,9 +50,15 @@ model User {
   accounts      Account[]
   sessions      Session[]
   password String?
-  // Trust signal shown on campaigns. Set by an admin once an organiser passes
-  // verification (the full KYC flow is later in Phase 4); seeded for the demo.
+  // Trust signal shown on campaigns. Set true by an admin once an organiser
+  // passes verification; kept in sync with verificationStatus.
   isVerifiedOrganiser Boolean @default(false)
+  // KYC lifecycle for organiser verification (Phase 4).
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  // Access control for the admin console.
+  role UserRole @default(USER)
+  // A banned user cannot sign in to act (campaigns are suspended separately).
+  isBanned Boolean @default(false)
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
 
@@ -60,6 +66,38 @@ model User {
   withdrawals Withdrawal[]
   payoutAccounts PayoutAccount[]
   donations Donation[]
+  verificationRequests VerificationRequest[]
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+// An organiser's KYC submission, reviewed by an admin.
+model VerificationRequest {
+  id String @id @default(uuid())
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName String
+  phone String
+  idType String
+  idNumber String
+  status VerificationStatus @default(PENDING)
+  reviewNotes String? @db.Text
+  reviewedById String?
+  dateAdded DateTime @default(now())
+  dateUpdated DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
 }
 
 model VerificationToken {
@@ -79,10 +117,46 @@ model Event {
   description String @db.Text
   category Event_Category
   date DateTime
+  // Moderation lifecycle. Public listings show ACTIVE/ENDED only; SUSPENDED is
+  // hidden and cannot take donations.
+  status Event_Status @default(ACTIVE)
   fundraiser Fundraiser?
   updates Update[]
+  reports Report[]
   dateAdded DateTime @default(now())
   dateUpdated DateTime @updatedAt
+
+  @@index([status])
+}
+
+enum Event_Status {
+  DRAFT
+  PENDING_REVIEW
+  ACTIVE
+  ENDED
+  SUSPENDED
+}
+
+enum ReportStatus {
+  OPEN
+  ACTIONED
+  DISMISSED
+}
+
+// A visitor's report against a campaign, for moderation.
+model Report {
+  id String @id @default(uuid())
+  eventId String
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  reason String
+  details String? @db.Text
+  reporterEmail String?
+  status ReportStatus @default(OPEN)
+  dateAdded DateTime @default(now())
+  dateUpdated DateTime @updatedAt
+
+  @@index([eventId])
+  @@index([status])
 }
 
 // A progress update an organiser posts to their event's Updates tab.

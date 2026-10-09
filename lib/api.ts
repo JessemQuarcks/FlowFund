@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { ZodError } from "zod";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { AppError, ErrorCode, errors } from "@/lib/errors";
 
 // Every API error response has this shape. `message` is safe to show to
@@ -60,6 +61,18 @@ export async function requireUser() {
   const session = await getServerSession(authOptions);
   if (!session?.user) throw errors.unauthorized();
   return session.user;
+}
+
+// Only an admin may pass. Checks the role against the database, not the
+// session, so a revoked admin loses access immediately.
+export async function requireAdmin() {
+  const sessionUser = await requireUser();
+  const user = await prisma.user.findUnique({
+    where: { id: sessionUser.id },
+    select: { id: true, role: true },
+  });
+  if (!user || user.role !== "ADMIN") throw errors.forbidden();
+  return user;
 }
 
 export async function readJson(request: Request): Promise<unknown> {

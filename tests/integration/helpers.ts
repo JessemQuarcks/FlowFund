@@ -5,6 +5,8 @@ export async function resetDatabase() {
   // Children before parents: the foreign keys have no cascade.
   await prisma.$transaction([
     prisma.auditLog.deleteMany(),
+    prisma.report.deleteMany(),
+    prisma.verificationRequest.deleteMany(),
     prisma.update.deleteMany(),
     prisma.donation.deleteMany(),
     prisma.withdrawal.deleteMany(),

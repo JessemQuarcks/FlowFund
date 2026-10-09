@@ -67,6 +67,10 @@ export const authOptions: AuthOptions = {
           throw new Error("Incorrect username or password");
         }
 
+        if (user.isBanned) {
+          throw new Error("This account has been suspended");
+        }
+
         return {
           id: user.id,
           email: user.email,

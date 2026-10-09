@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Edit, Plus } from "lucide-react";
+import { BadgeCheck, Edit, Plus, ShieldAlert } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth"; // Adjust path as needed
@@ -87,16 +87,56 @@ export default async function DashboardPage() {
     },
   });
 
+  const me = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: true, verificationStatus: true },
+  });
+
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold green-text-gradient">Dashboard</h1>
-        <Link href="/events/create">
-          <Button variant="gradient">
-            <Plus className="mr-2 h-4 w-4" /> Create Event
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {me?.role === "ADMIN" && (
+            <Link href="/admin">
+              <Button variant="outline">
+                <ShieldAlert className="mr-2 h-4 w-4" /> Admin console
+              </Button>
+            </Link>
+          )}
+          <Link href="/events/create">
+            <Button variant="gradient">
+              <Plus className="mr-2 h-4 w-4" /> Create Event
+            </Button>
+          </Link>
+        </div>
       </div>
+
+      {me?.verificationStatus !== "VERIFIED" && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-primary-50/60 p-4 dark:bg-primary-900/20">
+          <div className="flex items-center gap-3">
+            <BadgeCheck className="h-5 w-5 text-primary-600" />
+            <div>
+              <p className="text-sm font-medium">
+                {me?.verificationStatus === "PENDING"
+                  ? "Your verification is under review"
+                  : "Get verified to withdraw funds"}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Verified organisers earn a trust badge and can withdraw what
+                they raise.
+              </p>
+            </div>
+          </div>
+          {me?.verificationStatus !== "PENDING" && (
+            <Link href="/verify">
+              <Button size="sm" variant="gradient">
+                Get verified
+              </Button>
+            </Link>
+          )}
+        </div>
+      )}
 
       <Tabs defaultValue="my-events">
         <TabsList className="mb-6 bg-primary-50 dark:bg-primary-900">

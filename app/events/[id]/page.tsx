@@ -17,6 +17,7 @@ import { DonationForm } from "@/components/donation-form";
 import { DonorsList } from "@/components/donors-list";
 import { EventUpdates } from "@/components/event-updates";
 import { ShareButton } from "@/components/share-button";
+import { ReportDialog } from "@/components/report-dialog";
 import { AnimatedProgress } from "@/components/animated-progress";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/money";
@@ -145,11 +146,24 @@ export default async function EventPage({
             </span>
           </div>
 
+          {event.status === "SUSPENDED" && (
+            <div className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-300">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                This campaign is under review and is not currently accepting
+                donations.
+              </span>
+            </div>
+          )}
+
           <div className="flex items-start justify-between gap-4">
             <h1 className="text-3xl font-bold tracking-tight text-balance sm:text-4xl">
               {event.title}
             </h1>
-            <ShareButton title={event.title} />
+            <div className="flex items-center gap-1">
+              <ShareButton title={event.title} />
+              <ReportDialog eventId={event.id} />
+            </div>
           </div>
 
           {/* Organiser row */}
@@ -252,13 +266,20 @@ export default async function EventPage({
             </CardContent>
           </Card>
 
-          <DonationForm event={event} />
-
-          <div className="flex items-center justify-center gap-2 rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
-            <ShieldCheck className="h-4 w-4 text-primary-600" />
-            Secure payment via Paystack ·{" "}
-            {formatMoney(f?.minimumAmount ?? 0, f?.currency)} minimum
-          </div>
+          {event.status === "SUSPENDED" ? (
+            <div className="rounded-xl border bg-muted/40 p-6 text-center text-sm text-muted-foreground">
+              Donations are paused while this campaign is reviewed.
+            </div>
+          ) : (
+            <>
+              <DonationForm event={event} />
+              <div className="flex items-center justify-center gap-2 rounded-xl border bg-muted/30 px-4 py-3 text-xs text-muted-foreground">
+                <ShieldCheck className="h-4 w-4 text-primary-600" />
+                Secure payment via Paystack ·{" "}
+                {formatMoney(f?.minimumAmount ?? 0, f?.currency)} minimum
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -51,7 +51,10 @@ export async function createEvent(userId: string, input: CreateEventInput) {
 export function buildDiscoverWhere(
   params: DiscoverParams,
 ): Prisma.EventWhereInput {
-  const where: Prisma.EventWhereInput = {};
+  // Only publicly visible campaigns (never DRAFT/PENDING_REVIEW/SUSPENDED).
+  const where: Prisma.EventWhereInput = {
+    status: { in: ["ACTIVE", "ENDED"] },
+  };
   const and: Prisma.EventWhereInput[] = [];
 
   if (params.q) {
@@ -140,7 +143,10 @@ export async function searchEvents(params: DiscoverParams) {
 // not every event in the database.
 export async function featuredEvents(limit = 6) {
   return prisma.event.findMany({
-    where: { fundraiser: { is: { endDate: { gt: new Date() } } } },
+    where: {
+      status: "ACTIVE",
+      fundraiser: { is: { endDate: { gt: new Date() } } },
+    },
     orderBy: { fundraiser: { donorCount: "desc" } },
     take: limit,
     include: {

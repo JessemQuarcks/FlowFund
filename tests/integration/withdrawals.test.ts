@@ -56,12 +56,23 @@ afterAll(async () => {
 });
 
 // A funded fundraiser owned by a fresh user, plus a verified payout account.
-// Ended by default, since payouts are only allowed after the end date.
+// Ended by default, since payouts are only allowed after the end date. The
+// organiser is verified by default, since payouts require it.
 async function fundedSetup(
   raisedPesewas: number,
-  { ended = true }: { ended?: boolean } = {},
+  {
+    ended = true,
+    verified = true,
+  }: { ended?: boolean; verified?: boolean } = {},
 ) {
   const user = await createUser();
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      isVerifiedOrganiser: verified,
+      verificationStatus: verified ? "VERIFIED" : "UNVERIFIED",
+    },
+  });
   const event = await createEventWithFundraiser(user.id);
   await prisma.fundraiser.update({
     where: { id: event.fundraiser!.id },
@@ -157,6 +168,22 @@ describe("requestWithdrawal", () => {
       actorUserId: user.id,
       fundraiserId: fundraiser.id,
     });
+  });
+
+  it("refuses a withdrawal from an unverified organiser", async () => {
+    const { user, fundraiser, account } = await fundedSetup(10_000, {
+      verified: false,
+    });
+
+    await expect(
+      requestWithdrawal(user.id, {
+        fundraiserId: fundraiser.id,
+        payoutAccountId: account.id,
+        amount: 50,
+      }),
+    ).rejects.toMatchObject({ status: 403 });
+    expect(await totalWithdrawn(fundraiser.id)).toBe(0);
+    expect(transfer).not.toHaveBeenCalled();
   });
 
   it("refuses a withdrawal before the fundraiser's end date", async () => {

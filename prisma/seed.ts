@@ -292,26 +292,54 @@ async function main() {
 
   const organiserIds: Record<string, string> = {};
   for (const [key, o] of Object.entries(organisers)) {
+    const verificationStatus = o.verified ? "VERIFIED" : "PENDING";
+    const fields = {
+      name: o.name,
+      password: passwordHash,
+      image: o.image,
+      isVerifiedOrganiser: o.verified,
+      verificationStatus,
+      emailVerified: new Date(),
+    } as const;
     const user = await prisma.user.upsert({
       where: { email: o.email },
-      update: {
-        name: o.name,
-        password: passwordHash,
-        image: o.image,
-        isVerifiedOrganiser: o.verified,
-        emailVerified: new Date(),
-      },
-      create: {
-        email: o.email,
-        name: o.name,
-        password: passwordHash,
-        image: o.image,
-        isVerifiedOrganiser: o.verified,
-        emailVerified: new Date(),
-      },
+      update: fields,
+      create: { email: o.email, ...fields },
     });
     organiserIds[key] = user.id;
+
+    // Unverified organisers have a pending KYC request for the admin queue.
+    if (!o.verified) {
+      await prisma.verificationRequest.create({
+        data: {
+          userId: user.id,
+          fullName: o.name,
+          phone: "+233 24 000 0000",
+          idType: "Ghana Card",
+          idNumber: "GHA-000000000-0",
+          status: "PENDING",
+        },
+      });
+    }
   }
+
+  // An admin account for the moderation console.
+  await prisma.user.upsert({
+    where: { email: "admin@flowfund.demo" },
+    update: {
+      name: "FlowFund Admin",
+      password: passwordHash,
+      role: "ADMIN",
+      emailVerified: new Date(),
+    },
+    create: {
+      email: "admin@flowfund.demo",
+      name: "FlowFund Admin",
+      password: passwordHash,
+      role: "ADMIN",
+      emailVerified: new Date(),
+    },
+  });
 
   // A demo donor whose gifts link to their account (for "My donations").
   const donor = await prisma.user.upsert({
@@ -391,8 +419,27 @@ async function main() {
     console.log(`  • ${c.title} — ${c.donations.length} donations`);
   }
 
+  // A demo report for the moderation queue.
+  const reported = await prisma.event.findFirst({
+    where: { title: "Accra Street Dogs Rescue Shelter" },
+  });
+  if (reported) {
+    await prisma.report.create({
+      data: {
+        eventId: reported.id,
+        reason: "Misleading information",
+        details: "A visitor flagged this campaign for review (demo report).",
+        reporterEmail: "concerned@example.com",
+        status: "OPEN",
+      },
+    });
+  }
+
   console.log("\nSeed complete.");
   console.log("Demo logins (password for all): " + DEMO_PASSWORD);
+  console.log(
+    "  Admin:      admin@flowfund.demo  (moderation console at /admin)",
+  );
   console.log(
     "  Organisers: ama@flowfund.demo, kwame@flowfund.demo, esi@flowfund.demo",
   );

@@ -86,6 +86,17 @@ export async function requestWithdrawal(
     );
   }
 
+  // Trust gate (Phase 4): no payout to an unverified organiser.
+  const organiser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { isVerifiedOrganiser: true },
+  });
+  if (!organiser?.isVerifiedOrganiser) {
+    throw errors.forbidden(
+      "Your account must be verified before you can withdraw. Complete organiser verification first.",
+    );
+  }
+
   const payoutAccount = await getOwnedPayoutAccount(
     userId,
     input.payoutAccountId,

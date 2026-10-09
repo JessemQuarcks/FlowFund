@@ -81,10 +81,13 @@ export async function initializeDonation(
 ) {
   const fundraiser = await prisma.fundraiser.findUnique({
     where: { id: input.fundraiserId },
-    include: { event: { select: { title: true } } },
+    include: { event: { select: { title: true, status: true } } },
   });
   if (!fundraiser) throw errors.notFound("Fundraiser not found");
 
+  if (fundraiser.event.status === "SUSPENDED") {
+    throw errors.badRequest("This campaign is not accepting donations");
+  }
   if (fundraiser.endDate.getTime() <= Date.now()) {
     throw errors.badRequest("This fundraiser has ended");
   }
