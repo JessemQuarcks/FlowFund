@@ -71,6 +71,15 @@ const config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      boxShadow: {
+        soft: "0 1px 2px hsl(160 20% 20% / 0.04), 0 8px 24px -12px hsl(160 30% 20% / 0.18)",
+        elevated:
+          "0 2px 4px hsl(160 20% 20% / 0.05), 0 24px 48px -24px hsl(160 40% 20% / 0.35)",
+        glow: "0 0 0 1px hsl(142.1 70.6% 45.3% / 0.25), 0 16px 48px -16px hsl(142.1 70.6% 45.3% / 0.5)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },
@@ -80,10 +89,15 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "fade-up": {
+          from: { opacity: "0", transform: "translateY(16px)" },
+          to: { opacity: "1", transform: "none" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "fade-up": "fade-up 0.7s cubic-bezier(0.22,1,0.36,1) both",
       },
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
