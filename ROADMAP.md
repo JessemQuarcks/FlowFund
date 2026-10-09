@@ -178,7 +178,9 @@ Gate: no screen shows sample data or a fake submit handler.
 
 Gate: written legal sign-off on the operating model, and no payout possible to an unverified organiser.
 
-- [ ] Organiser verification before the first payout: ID, phone, and payout account name matching the verified name
+UI revamp + demo (2026-10-09): the product was restyled to a professional, animated design system (FlowFund brand, motion primitives, reusable CampaignCard; home, discover and campaign detail rebuilt) and a rich seed (`npm run db:seed`) now renders nine realistic campaigns. See the design-system foundation in `app/globals.css` and `components/{reveal,count-up,animated-progress,campaign-card}`.
+
+- [~] Organiser verification before the first payout — **data + trust signal done** (`User.isVerifiedOrganiser`, shown as a Verified badge on cards and campaign pages, seeded for demo). Still to do: the KYC submission/review flow (ID, phone, payout-account name match) and **enforcing** it before payout.
 - [ ] Admin console: review and suspend campaigns, approve payouts above a threshold, issue refunds, ban users
 - [ ] Report-a-campaign flow and basic moderation of titles, descriptions and images
 - [ ] Campaign lifecycle: `DRAFT → PENDING_REVIEW → ACTIVE → ENDED / SUSPENDED`
@@ -186,7 +188,7 @@ Gate: written legal sign-off on the operating model, and no payout possible to a
 - [ ] Confirm with counsel whether holding and disbursing donor funds needs a Bank of Ghana licence or a licensed partner (Payment Systems and Services Act, 2019, Act 987), and register with the Data Protection Commission (Data Protection Act, 2012, Act 843)
 - [ ] Confirm Paystack approves crowdfunding on the merchant account (the withdrawal code already notes the account must be upgraded to a registered business)
 - [ ] Data retention and account deletion; keep only the Paystack fields needed
-- [ ] Security headers (CSP, HSTS); external security review of the payment and payout paths
+- [~] Security headers (CSP, HSTS); external security review of the payment and payout paths — **baseline headers done** in `next.config.mjs` (HSTS, nosniff, X-Frame-Options, Referrer-Policy, Permissions-Policy). Still to do: a nonce-based Content-Security-Policy and the external review.
 
 ## Phase 5 — Launch readiness (1–2 weeks)
 
