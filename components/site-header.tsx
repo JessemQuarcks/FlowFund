@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -9,10 +10,11 @@ import {
   LayoutDashboard,
   Info,
   Plus,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,6 +23,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 const NAV = [
@@ -46,6 +58,7 @@ function BrandMark() {
 export function SiteHeader() {
   const pathname = usePathname();
   const session = useSession()?.data;
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const firstName = session?.user?.name?.split(" ")[0] || "User";
   const isActive = (path: string) =>
     path === "/" ? pathname === "/" : pathname.startsWith(path);
@@ -80,8 +93,14 @@ export function SiteHeader() {
           <Link href="/profile">Profile</Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/api/auth/signout">Log out</Link>
+        <DropdownMenuItem
+          onSelect={(e) => {
+            e.preventDefault();
+            setConfirmOpen(true);
+          }}
+          className="text-red-600 focus:text-red-600"
+        >
+          <LogOut className="mr-2 h-4 w-4" /> Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -184,6 +203,28 @@ export function SiteHeader() {
           ))}
         </div>
       </nav>
+
+      {/* Sign-out confirmation (replaces the full NextAuth sign-out page) */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Log out of FlowFund?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You&apos;ll need to sign in again to manage your campaigns and
+              donations.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay signed in</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => signOut({ callbackUrl: "/" })}
+              className="bg-primary-600 text-white hover:bg-primary-700"
+            >
+              Log out
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

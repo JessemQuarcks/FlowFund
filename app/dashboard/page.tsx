@@ -10,7 +10,18 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BadgeCheck, Edit, Plus, ShieldAlert } from "lucide-react";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Edit,
+  LayoutDashboard,
+  LogIn,
+  Plus,
+  Rocket,
+  ShieldAlert,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth"; // Adjust path as needed
@@ -22,8 +33,72 @@ export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
 
   if (!session?.user?.id) {
-    // Handle unauthenticated user - redirect or show login
-    return <div>Please log in to view your dashboard</div>;
+    return (
+      <div className="container flex min-h-[70vh] items-center justify-center py-12">
+        <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border bg-card p-8 text-center shadow-elevated sm:p-12">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary-400/15 blur-3xl" />
+          <div className="relative">
+            <span className="brand-gradient mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-soft">
+              <LayoutDashboard className="h-7 w-7" />
+            </span>
+            <h1 className="mt-6 text-2xl font-bold tracking-tight sm:text-3xl">
+              Your <span className="brand-text-gradient">dashboard</span> awaits
+            </h1>
+            <p className="mx-auto mt-3 max-w-sm text-muted-foreground">
+              Sign in to manage your campaigns, track donations in real time and
+              withdraw the funds you raise.
+            </p>
+
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <Link href="/signin">
+                <Button
+                  variant="gradient"
+                  size="lg"
+                  className="w-full gap-2 sm:w-auto"
+                >
+                  <LogIn className="h-4 w-4" /> Sign in
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full gap-2 sm:w-auto"
+                >
+                  Create an account <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+
+            <div className="mt-8 grid gap-3 text-left sm:grid-cols-3">
+              {[
+                { icon: Rocket, label: "Launch a campaign in minutes" },
+                { icon: TrendingUp, label: "Track donations live" },
+                { icon: Wallet, label: "Withdraw securely" },
+              ].map((b) => (
+                <div
+                  key={b.label}
+                  className="flex items-center gap-2 rounded-xl border bg-muted/40 p-3 text-sm"
+                >
+                  <b.icon className="h-4 w-4 shrink-0 text-primary-600" />
+                  <span className="text-muted-foreground">{b.label}</span>
+                </div>
+              ))}
+            </div>
+
+            <p className="mt-8 text-sm text-muted-foreground">
+              Just browsing?{" "}
+              <Link
+                href="/events"
+                className="font-medium text-primary-600 hover:underline"
+              >
+                Explore campaigns
+              </Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Fetch user's events with fundraiser data
