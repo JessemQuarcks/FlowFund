@@ -196,32 +196,78 @@ export async function adminStats() {
   };
 }
 
-export async function adminListCampaigns(limit = 100) {
-  return prisma.event.findMany({
-    orderBy: { dateAdded: "desc" },
-    take: limit,
-    include: {
-      fundraiser: {
-        select: { raisedAmount: true, targetAmount: true, currency: true },
-      },
-      user: { select: { name: true, email: true } },
-      _count: { select: { reports: true } },
-    },
-  });
+export async function adminListCampaigns(params: {
+  q?: string;
+  page: number;
+  status: CampaignStatusFilter;
+}) {
+  const where: Prisma.EventWhereInput = {};
+  if (params.status !== "all") where.status = params.status;
+  if (params.q) {
+    where.OR = [
+      { title: { contains: params.q } },
+      { description: { contains: params.q } },
+      { user: { name: { contains: params.q } } },
+      { user: { email: { contains: params.q } } },
+    ];
+  }
+
+  return listAdminPage(
+    params.page,
+    () => prisma.event.count({ where }),
+    (page) =>
+      prisma.event.findMany({
+        where,
+        orderBy: [{ dateAdded: "desc" }, { id: "asc" }],
+        skip: (page - 1) * ADMIN_QUEUE_PAGE_SIZE,
+        take: ADMIN_QUEUE_PAGE_SIZE,
+        include: {
+          fundraiser: {
+            select: { raisedAmount: true, targetAmount: true, currency: true },
+          },
+          user: { select: { name: true, email: true } },
+          _count: { select: { reports: true } },
+        },
+      }),
+  );
 }
 
-export async function adminListUsers(limit = 100) {
-  return prisma.user.findMany({
-    orderBy: { dateAdded: "desc" },
-    take: limit,
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      isBanned: true,
-      verificationStatus: true,
-      _count: { select: { events: true } },
-    },
-  });
+export async function adminListUsers(params: {
+  q?: string;
+  page: number;
+  verificationStatus: VerificationStatusFilter;
+  banned: "all" | "banned" | "active";
+}) {
+  const where: Prisma.UserWhereInput = {};
+  if (params.verificationStatus !== "all") {
+    where.verificationStatus = params.verificationStatus;
+  }
+  if (params.banned !== "all") where.isBanned = params.banned === "banned";
+  if (params.q) {
+    where.OR = [
+      { name: { contains: params.q } },
+      { email: { contains: params.q } },
+    ];
+  }
+
+  return listAdminPage(
+    params.page,
+    () => prisma.user.count({ where }),
+    (page) =>
+      prisma.user.findMany({
+        where,
+        orderBy: [{ dateAdded: "desc" }, { id: "asc" }],
+        skip: (page - 1) * ADMIN_QUEUE_PAGE_SIZE,
+        take: ADMIN_QUEUE_PAGE_SIZE,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          isBanned: true,
+          verificationStatus: true,
+          _count: { select: { events: true } },
+        },
+      }),
+  );
 }
