@@ -60,7 +60,11 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawAdminSearchParams>;
+}) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/signin");
   const me = await prisma.user.findUnique({
