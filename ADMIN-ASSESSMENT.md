@@ -12,9 +12,9 @@ The main gap is that the console is list-and-button oriented. It can perform bas
 
 ### 1. Make queues usable as they grow
 
-Campaign and user lists are capped at the latest 100 records, with no search, filters, sort, or pagination. Add server-side query parameters and visible totals so staff can find a specific campaign, organiser, or account without relying on the current page of results.
+**Implemented:** all four admin queues now support server-side search, relevant status filters, URL-persisted state, result totals, and 20-item pagination. Search covers campaign title/description and organiser, report reason/details/reporter email and campaign title, verification applicant/contact details, and user name/email.
 
-Useful filters could include campaign status, report count, verification state, ban state, and date range.
+Campaign status, report status, verification status, and banned/active account filters are available. Date-range and report-count filters remain potential follow-ups.
 
 ### 2. Give reviewers enough context to decide
 
