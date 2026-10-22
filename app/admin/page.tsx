@@ -13,10 +13,23 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { formatMoney } from "@/lib/money";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { AdminAction } from "@/components/admin/admin-action";
-import { listPendingVerifications } from "@/lib/services/verification";
+import {
+  AdminTabs,
+  AdminTabsContent,
+  AdminTabsList,
+  AdminTabsTrigger,
+} from "@/components/admin/admin-tabs";
+import {
+  AdminQueueFilters,
+  AdminQueuePagination,
+} from "@/components/admin/admin-queue-controls";
+import {
+  parseAdminQueueParams,
+  type RawAdminSearchParams,
+} from "@/schemas/admin";
+import { listAdminVerifications } from "@/lib/services/verification";
 import {
   adminListCampaigns,
   adminListUsers,
