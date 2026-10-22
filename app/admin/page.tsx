@@ -294,7 +294,21 @@ export default async function AdminPage({
               ))}
             </div>
           )}
-        </TabsContent>
+          <AdminQueuePagination
+            tab="reports"
+            q={params.q}
+            filters={[
+              {
+                name: "reportStatus",
+                value: params.reportStatus,
+              },
+            ]}
+            page={reports.page}
+            total={reports.total}
+            totalPages={reports.totalPages}
+            perPage={reports.perPage}
+          />
+        </AdminTabsContent>
 
         {/* Campaigns */}
         <TabsContent value="campaigns" className="pt-4">
