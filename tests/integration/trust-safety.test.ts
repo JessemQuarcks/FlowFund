@@ -1,13 +1,17 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
 import {
+  listAdminVerifications,
   getVerificationState,
   reviewVerification,
   submitVerification,
 } from "@/lib/services/verification";
 import {
+  adminListCampaigns,
+  adminListUsers,
   adminStats,
   createReport,
+  listReports,
   resolveReport,
   setEventStatus,
   setUserBanned,
@@ -97,6 +101,71 @@ describe("organiser verification", () => {
 });
 
 describe("moderation", () => {
+  it("searches and filters each admin queue and paginates large results", async () => {
+    const owner = await createUser("admin-queue-search@example.com");
+    const event = await createEventWithFundraiser(owner.id);
+    await prisma.event.update({
+      where: { id: event.id },
+      data: { title: "Admin Queue Search Campaign" },
+    });
+    await createReport(event.id, { reason: "Admin Queue Search Report" });
+    await submitVerification(owner.id, {
+      fullName: "Admin Queue Search Person",
+      phone: "+233240000000",
+      idType: "Passport",
+      idNumber: "P-1",
+    });
+
+    const verificationResults = await listAdminVerifications({
+      q: "Admin Queue Search Person",
+      page: 1,
+      status: "PENDING",
+    });
+    expect(verificationResults.total).toBe(1);
+    expect(verificationResults.items).toHaveLength(1);
+
+    const reportResults = await listReports({
+      q: "Admin Queue Search Report",
+      page: 1,
+      status: "OPEN",
+    });
+    expect(reportResults.total).toBe(1);
+    expect(reportResults.items).toHaveLength(1);
+
+    const campaignResults = await adminListCampaigns({
+      q: "Admin Queue Search Campaign",
+      page: 1,
+      status: "ACTIVE",
+    });
+    expect(campaignResults.total).toBe(1);
+    expect(campaignResults.items).toHaveLength(1);
+
+    const userResults = await adminListUsers({
+      q: "admin-queue-search@example.com",
+      page: 1,
+      verificationStatus: "PENDING",
+      banned: "active",
+    });
+    expect(userResults.total).toBe(1);
+    expect(userResults.items).toHaveLength(1);
+
+    await Promise.all(
+      Array.from({ length: 21 }, (_, index) =>
+        createUser(`admin-queue-page-${index}@example.com`),
+      ),
+    );
+    const pageResults = await adminListUsers({
+      q: "admin-queue-page-",
+      page: 2,
+      verificationStatus: "all",
+      banned: "all",
+    });
+    expect(pageResults.total).toBe(21);
+    expect(pageResults.page).toBe(2);
+    expect(pageResults.totalPages).toBe(2);
+    expect(pageResults.items).toHaveLength(1);
+  });
+
   it("files a report and lets an admin suspend the campaign", async () => {
     const owner = await createUser();
     const reviewer = await admin();
