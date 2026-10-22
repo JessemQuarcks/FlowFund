@@ -83,12 +83,30 @@ export default async function AdminPage({
     );
   }
 
+  const params = parseAdminQueueParams(await searchParams);
   const [stats, verifications, reports, campaigns, users] = await Promise.all([
     adminStats(),
-    listPendingVerifications(),
-    listReports("OPEN"),
-    adminListCampaigns(),
-    adminListUsers(),
+    listAdminVerifications({
+      q: params.q,
+      page: params.page,
+      status: params.verificationStatus,
+    }),
+    listReports({
+      q: params.q,
+      page: params.page,
+      status: params.reportStatus,
+    }),
+    adminListCampaigns({
+      q: params.q,
+      page: params.page,
+      status: params.campaignStatus,
+    }),
+    adminListUsers({
+      q: params.q,
+      page: params.page,
+      verificationStatus: params.verificationStatus,
+      banned: params.banned,
+    }),
   ]);
 
   const tiles = [
@@ -134,23 +152,46 @@ export default async function AdminPage({
         ))}
       </div>
 
-      <Tabs defaultValue="verifications">
-        <TabsList>
-          <TabsTrigger value="verifications">
-            Verifications ({verifications.length})
-          </TabsTrigger>
-          <TabsTrigger value="reports">Reports ({reports.length})</TabsTrigger>
-          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-        </TabsList>
+      <AdminTabs activeTab={params.tab}>
+        <AdminTabsList>
+          <AdminTabsTrigger value="verifications">
+            Verifications ({verifications.total})
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="reports">
+            Reports ({reports.total})
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="campaigns">
+            Campaigns ({campaigns.total})
+          </AdminTabsTrigger>
+          <AdminTabsTrigger value="users">
+            Users ({users.total})
+          </AdminTabsTrigger>
+        </AdminTabsList>
 
         {/* Verifications */}
-        <TabsContent value="verifications" className="pt-4">
-          {verifications.length === 0 ? (
-            <Empty>No pending verifications.</Empty>
+        <AdminTabsContent value="verifications" className="pt-4">
+          <AdminQueueFilters
+            tab="verifications"
+            q={params.q}
+            filters={[
+              {
+                label: "Verification status",
+                name: "verificationStatus",
+                value: params.verificationStatus,
+                options: [
+                  { value: "PENDING", label: "Pending" },
+                  { value: "VERIFIED", label: "Verified" },
+                  { value: "REJECTED", label: "Rejected" },
+                  { value: "all", label: "All statuses" },
+                ],
+              },
+            ]}
+          />
+          {verifications.items.length === 0 ? (
+            <Empty>No verifications match these filters.</Empty>
           ) : (
             <div className="space-y-3">
-              {verifications.map((v) => (
+              {verifications.items.map((v) => (
                 <Row key={v.id}>
                   <div className="min-w-0">
                     <div className="font-medium">{v.fullName}</div>
