@@ -218,15 +218,46 @@ export default async function AdminPage({
               ))}
             </div>
           )}
-        </TabsContent>
+          <AdminQueuePagination
+            tab="verifications"
+            q={params.q}
+            filters={[
+              {
+                name: "verificationStatus",
+                value: params.verificationStatus,
+              },
+            ]}
+            page={verifications.page}
+            total={verifications.total}
+            totalPages={verifications.totalPages}
+            perPage={verifications.perPage}
+          />
+        </AdminTabsContent>
 
         {/* Reports */}
-        <TabsContent value="reports" className="pt-4">
-          {reports.length === 0 ? (
-            <Empty>No open reports.</Empty>
+        <AdminTabsContent value="reports" className="pt-4">
+          <AdminQueueFilters
+            tab="reports"
+            q={params.q}
+            filters={[
+              {
+                label: "Report status",
+                name: "reportStatus",
+                value: params.reportStatus,
+                options: [
+                  { value: "OPEN", label: "Open" },
+                  { value: "ACTIONED", label: "Actioned" },
+                  { value: "DISMISSED", label: "Dismissed" },
+                  { value: "all", label: "All statuses" },
+                ],
+              },
+            ]}
+          />
+          {reports.items.length === 0 ? (
+            <Empty>No reports match these filters.</Empty>
           ) : (
             <div className="space-y-3">
-              {reports.map((r) => (
+              {reports.items.map((r) => (
                 <Row key={r.id}>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
