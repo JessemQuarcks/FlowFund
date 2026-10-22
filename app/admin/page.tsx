@@ -311,103 +311,190 @@ export default async function AdminPage({
         </AdminTabsContent>
 
         {/* Campaigns */}
-        <TabsContent value="campaigns" className="pt-4">
-          <div className="space-y-3">
-            {campaigns.map((c) => (
-              <Row key={c.id}>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Link
-                      href={`/events/${c.id}`}
-                      className="truncate font-medium hover:underline"
-                    >
-                      {c.title}
-                    </Link>
-                    <StatusBadge status={c.status} />
-                    {c._count.reports > 0 && (
-                      <Badge variant="secondary" className="gap-1">
-                        <Flag className="h-3 w-3" /> {c._count.reports}
-                      </Badge>
-                    )}
+        <AdminTabsContent value="campaigns" className="pt-4">
+          <AdminQueueFilters
+            tab="campaigns"
+            q={params.q}
+            filters={[
+              {
+                label: "Campaign status",
+                name: "campaignStatus",
+                value: params.campaignStatus,
+                options: [
+                  { value: "all", label: "All statuses" },
+                  { value: "DRAFT", label: "Draft" },
+                  { value: "PENDING_REVIEW", label: "Pending review" },
+                  { value: "ACTIVE", label: "Active" },
+                  { value: "ENDED", label: "Ended" },
+                  { value: "SUSPENDED", label: "Suspended" },
+                ],
+              },
+            ]}
+          />
+          {campaigns.items.length === 0 ? (
+            <Empty>No campaigns match these filters.</Empty>
+          ) : (
+            <div className="space-y-3">
+              {campaigns.items.map((c) => (
+                <Row key={c.id}>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        href={`/events/${c.id}`}
+                        className="truncate font-medium hover:underline"
+                      >
+                        {c.title}
+                      </Link>
+                      <StatusBadge status={c.status} />
+                      {c._count.reports > 0 && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Flag className="h-3 w-3" /> {c._count.reports}
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="truncate text-sm text-muted-foreground">
+                      {c.user.name} ·{" "}
+                      {c.fundraiser
+                        ? `${formatMoney(c.fundraiser.raisedAmount, c.fundraiser.currency)} raised`
+                        : "no fundraiser"}
+                    </div>
                   </div>
-                  <div className="truncate text-sm text-muted-foreground">
-                    {c.user.name} ·{" "}
-                    {c.fundraiser
-                      ? `${formatMoney(c.fundraiser.raisedAmount, c.fundraiser.currency)} raised`
-                      : "no fundraiser"}
-                  </div>
-                </div>
-                {c.status === "SUSPENDED" ? (
-                  <AdminAction
-                    url={`/api/admin/campaigns/${c.id}/status`}
-                    body={{ status: "ACTIVE" }}
-                    label="Reinstate"
-                    variant="gradient"
-                    successText="Campaign reinstated"
-                  />
-                ) : (
-                  <AdminAction
-                    url={`/api/admin/campaigns/${c.id}/status`}
-                    body={{ status: "SUSPENDED" }}
-                    label="Suspend"
-                    variant="destructive"
-                    confirmText="Suspend this campaign?"
-                    successText="Campaign suspended"
-                  />
-                )}
-              </Row>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Users */}
-        <TabsContent value="users" className="pt-4">
-          <div className="space-y-3">
-            {users.map((u) => (
-              <Row key={u.id}>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-medium">
-                      {u.name ?? "—"}
-                    </span>
-                    {u.role === "ADMIN" && (
-                      <Badge variant="secondary">admin</Badge>
-                    )}
-                    <StatusBadge status={u.verificationStatus} />
-                    {u.isBanned && (
-                      <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
-                        banned
-                      </span>
-                    )}
-                  </div>
-                  <div className="truncate text-sm text-muted-foreground">
-                    {u.email} · {u._count.events} campaigns
-                  </div>
-                </div>
-                {u.role !== "ADMIN" &&
-                  (u.isBanned ? (
+                  {c.status === "SUSPENDED" ? (
                     <AdminAction
-                      url={`/api/admin/users/${u.id}/ban`}
-                      body={{ banned: false }}
-                      label="Unban"
+                      url={`/api/admin/campaigns/${c.id}/status`}
+                      body={{ status: "ACTIVE" }}
+                      label="Reinstate"
                       variant="gradient"
-                      successText="User unbanned"
+                      successText="Campaign reinstated"
                     />
                   ) : (
                     <AdminAction
-                      url={`/api/admin/users/${u.id}/ban`}
-                      body={{ banned: true }}
-                      label="Ban"
+                      url={`/api/admin/campaigns/${c.id}/status`}
+                      body={{ status: "SUSPENDED" }}
+                      label="Suspend"
                       variant="destructive"
-                      confirmText="Ban this user?"
-                      successText="User banned"
+                      confirmText="Suspend this campaign?"
+                      successText="Campaign suspended"
                     />
-                  ))}
-              </Row>
-            ))}
-          </div>
-        </TabsContent>
-      </Tabs>
+                  )}
+                </Row>
+              ))}
+            </div>
+          )}
+          <AdminQueuePagination
+            tab="campaigns"
+            q={params.q}
+            filters={[
+              {
+                name: "campaignStatus",
+                value: params.campaignStatus,
+              },
+            ]}
+            page={campaigns.page}
+            total={campaigns.total}
+            totalPages={campaigns.totalPages}
+            perPage={campaigns.perPage}
+          />
+        </AdminTabsContent>
+
+        {/* Users */}
+        <AdminTabsContent value="users" className="pt-4">
+          <AdminQueueFilters
+            tab="users"
+            q={params.q}
+            filters={[
+              {
+                label: "Verification",
+                name: "verificationStatus",
+                value: params.verificationStatus,
+                options: [
+                  { value: "all", label: "All statuses" },
+                  { value: "UNVERIFIED", label: "Unverified" },
+                  { value: "PENDING", label: "Pending" },
+                  { value: "VERIFIED", label: "Verified" },
+                  { value: "REJECTED", label: "Rejected" },
+                ],
+              },
+              {
+                label: "Account status",
+                name: "banned",
+                value: params.banned,
+                options: [
+                  { value: "all", label: "All accounts" },
+                  { value: "active", label: "Active" },
+                  { value: "banned", label: "Banned" },
+                ],
+              },
+            ]}
+          />
+          {users.items.length === 0 ? (
+            <Empty>No users match these filters.</Empty>
+          ) : (
+            <div className="space-y-3">
+              {users.items.map((u) => (
+                <Row key={u.id}>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate font-medium">
+                        {u.name ?? "—"}
+                      </span>
+                      {u.role === "ADMIN" && (
+                        <Badge variant="secondary">admin</Badge>
+                      )}
+                      <StatusBadge status={u.verificationStatus} />
+                      {u.isBanned && (
+                        <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                          banned
+                        </span>
+                      )}
+                    </div>
+                    <div className="truncate text-sm text-muted-foreground">
+                      {u.email} · {u._count.events} campaigns
+                    </div>
+                  </div>
+                  {u.role !== "ADMIN" &&
+                    (u.isBanned ? (
+                      <AdminAction
+                        url={`/api/admin/users/${u.id}/ban`}
+                        body={{ banned: false }}
+                        label="Unban"
+                        variant="gradient"
+                        successText="User unbanned"
+                      />
+                    ) : (
+                      <AdminAction
+                        url={`/api/admin/users/${u.id}/ban`}
+                        body={{ banned: true }}
+                        label="Ban"
+                        variant="destructive"
+                        confirmText="Ban this user?"
+                        successText="User banned"
+                      />
+                    ))}
+                </Row>
+              ))}
+            </div>
+          )}
+          <AdminQueuePagination
+            tab="users"
+            q={params.q}
+            filters={[
+              {
+                name: "verificationStatus",
+                value: params.verificationStatus,
+              },
+              {
+                name: "banned",
+                value: params.banned,
+              },
+            ]}
+            page={users.page}
+            total={users.total}
+            totalPages={users.totalPages}
+            perPage={users.perPage}
+          />
+        </AdminTabsContent>
+      </AdminTabs>
     </div>
   );
 }
