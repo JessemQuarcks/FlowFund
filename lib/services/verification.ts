@@ -1,9 +1,14 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma";
 import { errors } from "@/lib/errors";
 import type {
   ReviewVerificationInput,
   SubmitVerificationInput,
 } from "@/schemas/verification";
+import {
+  ADMIN_QUEUE_PAGE_SIZE,
+  type VerificationStatusFilter,
+} from "@/schemas/admin";
 
 export type VerificationState = {
   status: "UNVERIFIED" | "PENDING" | "VERIFIED" | "REJECTED";
@@ -76,12 +81,34 @@ export async function getVerificationState(
 }
 
 // Admin queue of pending KYC submissions.
-export async function listPendingVerifications() {
-  return prisma.verificationRequest.findMany({
-    where: { status: "PENDING" },
-    orderBy: { dateAdded: "asc" },
+export async function listAdminVerifications(params: {
+  q?: string;
+  page: number;
+  status: VerificationStatusFilter;
+}) {
+  const where: Prisma.VerificationRequestWhereInput = {};
+  if (params.status !== "all") where.status = params.status;
+  if (params.q) {
+    where.OR = [
+      { fullName: { contains: params.q } },
+      { phone: { contains: params.q } },
+      { idType: { contains: params.q } },
+      { user: { name: { contains: params.q } } },
+      { user: { email: { contains: params.q } } },
+    ];
+  }
+
+  const total = await prisma.verificationRequest.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_QUEUE_PAGE_SIZE));
+  const page = Math.min(params.page, totalPages);
+  const items = await prisma.verificationRequest.findMany({
+    where,
+    orderBy: [{ dateAdded: "asc" }, { id: "asc" }],
+    skip: (page - 1) * ADMIN_QUEUE_PAGE_SIZE,
+    take: ADMIN_QUEUE_PAGE_SIZE,
     include: { user: { select: { id: true, name: true, email: true } } },
   });
+  return { items, total, page, totalPages, perPage: ADMIN_QUEUE_PAGE_SIZE };
 }
 
 // Admin approves or rejects a submission. Approval marks the organiser
