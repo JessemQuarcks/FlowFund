@@ -1,6 +1,39 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@/lib/generated/prisma";
 import { errors } from "@/lib/errors";
 import type { CreateReportInput } from "@/schemas/moderation";
+import type {
+  CampaignStatusFilter,
+  ReportStatusFilter,
+  VerificationStatusFilter,
+} from "@/schemas/admin";
+import { ADMIN_QUEUE_PAGE_SIZE } from "@/schemas/admin";
+
+type AdminPage<T> = {
+  items: T[];
+  total: number;
+  page: number;
+  totalPages: number;
+  perPage: number;
+};
+
+async function listAdminPage<T>(
+  requestedPage: number,
+  count: () => Promise<number>,
+  find: (page: number) => Promise<T[]>,
+): Promise<AdminPage<T>> {
+  const total = await count();
+  const totalPages = Math.max(1, Math.ceil(total / ADMIN_QUEUE_PAGE_SIZE));
+  const page = Math.min(requestedPage, totalPages);
+  const items = await find(page);
+  return {
+    items,
+    total,
+    page,
+    totalPages,
+    perPage: ADMIN_QUEUE_PAGE_SIZE,
+  };
+}
 
 // ---------- Reports (public create, admin resolve) ----------
 
@@ -21,14 +54,34 @@ export async function createReport(eventId: string, input: CreateReportInput) {
   });
 }
 
-export async function listReports(
-  status: "OPEN" | "ACTIONED" | "DISMISSED" = "OPEN",
-) {
-  return prisma.report.findMany({
-    where: { status },
-    orderBy: { dateAdded: "desc" },
-    include: { event: { select: { id: true, title: true, status: true } } },
-  });
+export async function listReports(params: {
+  q?: string;
+  page: number;
+  status: ReportStatusFilter;
+}) {
+  const where: Prisma.ReportWhereInput = {};
+  if (params.status !== "all") where.status = params.status;
+  if (params.q) {
+    where.OR = [
+      { reason: { contains: params.q } },
+      { details: { contains: params.q } },
+      { reporterEmail: { contains: params.q } },
+      { event: { title: { contains: params.q } } },
+    ];
+  }
+
+  return listAdminPage(
+    params.page,
+    () => prisma.report.count({ where }),
+    (page) =>
+      prisma.report.findMany({
+        where,
+        orderBy: [{ dateAdded: "desc" }, { id: "asc" }],
+        skip: (page - 1) * ADMIN_QUEUE_PAGE_SIZE,
+        take: ADMIN_QUEUE_PAGE_SIZE,
+        include: { event: { select: { id: true, title: true, status: true } } },
+      }),
+  );
 }
 
 // Admin dismisses a report or suspends the reported campaign.
