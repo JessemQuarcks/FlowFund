@@ -131,6 +131,12 @@ describe("moderation", () => {
     });
     expect(reportResults.total).toBe(1);
     expect(reportResults.items).toHaveLength(1);
+    expect(reportResults.items[0].event.description).toBe("Clearing the beach");
+    expect(reportResults.items[0].event.user.email).toBe(
+      "admin-queue-search@example.com",
+    );
+    expect(reportResults.items[0].event._count.reports).toBe(1);
+    expect(reportResults.items[0].event.fundraiser?.targetAmount).toBe(10_000);
 
     const campaignResults = await adminListCampaigns({
       q: "Admin Queue Search Campaign",

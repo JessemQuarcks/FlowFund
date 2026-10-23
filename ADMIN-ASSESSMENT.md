@@ -18,7 +18,7 @@ Campaign status, report status, verification status, and banned/active account f
 
 ### 2. Give reviewers enough context to decide
 
-A report row currently shows its reason and campaign title, but little context about the campaign or organiser. Add a detail view with a campaign preview, report history, organiser details, and relevant account or campaign activity. Keep the review interface focused so an admin can understand why a report was filed and what action will affect donors and organisers.
+**Implemented:** report rows now have an expandable, accessible review panel with the campaign description and status, category and dates, fundraiser totals and donor count, organiser identity and verification/account status, organiser campaign count, and the five most recent reports. The panel links to the public campaign and the organiser's filtered user record. The report query fetches this context server-side and does not expose reporter contact details.
 
 ### 3. Improve verification review
 
