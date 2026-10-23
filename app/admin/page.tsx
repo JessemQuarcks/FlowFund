@@ -290,6 +290,177 @@ export default async function AdminPage({
                       label="Dismiss"
                     />
                   </div>
+                  <details className="w-full border-t pt-3">
+                    <summary className="cursor-pointer text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                      Review campaign and organiser context
+                    </summary>
+                    <div className="mt-4 grid gap-4 md:grid-cols-2">
+                      <section className="space-y-2 rounded-lg bg-muted/40 p-4">
+                        <h3 className="font-semibold">Campaign</h3>
+                        <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                          {r.event.description}
+                        </p>
+                        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                          <ContextField
+                            label="Category"
+                            value={r.event.category.toLowerCase()}
+                          />
+                          <ContextField
+                            label="Created"
+                            value={formatAdminDate(r.event.dateAdded)}
+                          />
+                          <ContextField
+                            label="Campaign date"
+                            value={formatAdminDate(r.event.date)}
+                          />
+                          <ContextField
+                            label="Last updated"
+                            value={formatAdminDate(r.event.dateUpdated)}
+                          />
+                          <ContextField
+                            label="Updates posted"
+                            value={String(r.event._count.updates)}
+                          />
+                          <ContextField
+                            label="Total reports"
+                            value={String(r.event._count.reports)}
+                          />
+                        </dl>
+                        {r.event.fundraiser && (
+                          <div className="border-t pt-3">
+                            <h4 className="text-sm font-medium">
+                              Fundraising activity
+                            </h4>
+                            <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                              <ContextField
+                                label="Raised"
+                                value={formatMoney(
+                                  r.event.fundraiser.raisedAmount,
+                                  r.event.fundraiser.currency,
+                                )}
+                              />
+                              <ContextField
+                                label="Target"
+                                value={formatMoney(
+                                  r.event.fundraiser.targetAmount,
+                                  r.event.fundraiser.currency,
+                                )}
+                              />
+                              <ContextField
+                                label="Donors"
+                                value={String(r.event.fundraiser.donorCount)}
+                              />
+                              <ContextField
+                                label="Withdrawn"
+                                value={formatMoney(
+                                  r.event.fundraiser.totalWithdrawn,
+                                  r.event.fundraiser.currency,
+                                )}
+                              />
+                              <ContextField
+                                label="Fundraising ends"
+                                value={formatAdminDate(
+                                  r.event.fundraiser.endDate,
+                                )}
+                              />
+                            </dl>
+                          </div>
+                        )}
+                        <Link
+                          href={`/events/${r.event.id}`}
+                          className="inline-block text-sm font-medium text-primary hover:underline"
+                        >
+                          Open public campaign
+                        </Link>
+                      </section>
+
+                      <div className="space-y-4">
+                        <section className="space-y-2 rounded-lg bg-muted/40 p-4">
+                          <h3 className="font-semibold">Organiser</h3>
+                          <p className="text-sm">
+                            {r.event.user.name ?? "Name not provided"}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {r.event.user.email}
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            <StatusBadge
+                              status={r.event.user.verificationStatus}
+                            />
+                            {r.event.user.isBanned && (
+                              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                banned
+                              </span>
+                            )}
+                            {r.event.user.isVerifiedOrganiser && (
+                              <Badge variant="secondary">
+                                verified organiser
+                              </Badge>
+                            )}
+                          </div>
+                          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                            <ContextField
+                              label="Account created"
+                              value={formatAdminDate(r.event.user.dateAdded)}
+                            />
+                            <ContextField
+                              label="Campaigns"
+                              value={String(r.event.user._count.events)}
+                            />
+                          </dl>
+                          <Link
+                            href={`/admin?tab=users&q=${encodeURIComponent(r.event.user.email)}`}
+                            className="inline-block text-sm font-medium text-primary hover:underline"
+                          >
+                            Find organiser in users
+                          </Link>
+                        </section>
+
+                        <section className="space-y-2 rounded-lg bg-muted/40 p-4">
+                          <h3 className="font-semibold">
+                            Recent report history
+                          </h3>
+                          {r.event.reports.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                              No reports found.
+                            </p>
+                          ) : (
+                            <ul className="space-y-2">
+                              {r.event.reports.map((report) => (
+                                <li
+                                  key={report.id}
+                                  className="flex items-start justify-between gap-3 border-b pb-2 last:border-0 last:pb-0"
+                                >
+                                  <div>
+                                    <p className="text-sm font-medium">
+                                      {report.reason}
+                                    </p>
+                                    {report.details && (
+                                      <p className="text-sm text-muted-foreground">
+                                        {report.details}
+                                      </p>
+                                    )}
+                                    <time
+                                      dateTime={report.dateAdded.toISOString()}
+                                      className="text-xs text-muted-foreground"
+                                    >
+                                      {formatAdminDate(report.dateAdded)}
+                                    </time>
+                                  </div>
+                                  <StatusBadge status={report.status} />
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {r.event._count.reports > r.event.reports.length && (
+                            <p className="text-xs text-muted-foreground">
+                              Showing the 5 most recent reports.
+                            </p>
+                          )}
+                        </section>
+                      </div>
+                    </div>
+                  </details>
                 </Row>
               ))}
             </div>
@@ -513,4 +684,17 @@ function Empty({ children }: { children: React.ReactNode }) {
       {children}
     </div>
   );
+}
+
+function ContextField({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd className="font-medium">{value}</dd>
+    </div>
+  );
+}
+
+function formatAdminDate(date: Date) {
+  return date.toLocaleDateString("en-GH", { dateStyle: "medium" });
 }
