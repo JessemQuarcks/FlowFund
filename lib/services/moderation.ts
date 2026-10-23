@@ -79,7 +79,54 @@ export async function listReports(params: {
         orderBy: [{ dateAdded: "desc" }, { id: "asc" }],
         skip: (page - 1) * ADMIN_QUEUE_PAGE_SIZE,
         take: ADMIN_QUEUE_PAGE_SIZE,
-        include: { event: { select: { id: true, title: true, status: true } } },
+        include: {
+          event: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              category: true,
+              status: true,
+              date: true,
+              dateAdded: true,
+              dateUpdated: true,
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                  isBanned: true,
+                  isVerifiedOrganiser: true,
+                  verificationStatus: true,
+                  dateAdded: true,
+                  _count: { select: { events: true } },
+                },
+              },
+              fundraiser: {
+                select: {
+                  raisedAmount: true,
+                  targetAmount: true,
+                  donorCount: true,
+                  totalWithdrawn: true,
+                  currency: true,
+                  endDate: true,
+                },
+              },
+              reports: {
+                orderBy: [{ dateAdded: "desc" }, { id: "asc" }],
+                take: 5,
+                select: {
+                  id: true,
+                  reason: true,
+                  details: true,
+                  status: true,
+                  dateAdded: true,
+                },
+              },
+              _count: { select: { reports: true, updates: true } },
+            },
+          },
+        },
       }),
   );
 }
