@@ -22,7 +22,7 @@ Campaign status, report status, verification status, and banned/active account f
 
 ### 3. Improve verification review
 
-The verification queue displays full ID numbers inline. Mask sensitive numbers by default and reveal them only when necessary. Provide a review flow that collects an optional or required rejection reason before submitting a rejection. The backend already accepts review notes, but the current admin UI does not appear to collect them.
+**Implemented:** verification queue results no longer include full ID numbers. Admins explicitly request the ID through an admin-only, non-cacheable endpoint; each reveal is audited without copying the ID value into the audit log. Pending applications have approve/reject controls, and rejection opens a dialog for an optional reviewer note that is shared with the applicant.
 
 ### 4. Prevent confusing or accidental actions
 

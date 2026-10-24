@@ -15,6 +15,7 @@ import { formatMoney } from "@/lib/money";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminAction } from "@/components/admin/admin-action";
+import { VerificationReviewActions } from "@/components/admin/verification-review-actions";
 import {
   AdminTabs,
   AdminTabsContent,
@@ -194,26 +195,21 @@ export default async function AdminPage({
               {verifications.items.map((v) => (
                 <Row key={v.id}>
                   <div className="min-w-0">
-                    <div className="font-medium">{v.fullName}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{v.fullName}</span>
+                      <StatusBadge status={v.status} />
+                    </div>
                     <div className="truncate text-sm text-muted-foreground">
-                      {v.user.email} · {v.idType} {v.idNumber} · {v.phone}
+                      {v.user.email} · {v.idType} number hidden · {v.phone}
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <AdminAction
-                      url={`/api/admin/verifications/${v.id}`}
-                      body={{ decision: "approve" }}
-                      label="Approve"
-                      variant="gradient"
-                      successText="Organiser verified"
-                    />
-                    <AdminAction
-                      url={`/api/admin/verifications/${v.id}`}
-                      body={{ decision: "reject" }}
-                      label="Reject"
-                      confirmText="Reject this verification?"
-                    />
-                  </div>
+                  {v.status === "PENDING" ? (
+                    <VerificationReviewActions requestId={v.id} />
+                  ) : (
+                    <span className="text-sm text-muted-foreground">
+                      Submitted {formatAdminDate(v.dateAdded)}
+                    </span>
+                  )}
                 </Row>
               ))}
             </div>

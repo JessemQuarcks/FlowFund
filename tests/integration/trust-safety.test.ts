@@ -5,6 +5,7 @@ import {
   getVerificationState,
   reviewVerification,
   submitVerification,
+  viewVerificationIdentity,
 } from "@/lib/services/verification";
 import {
   adminListCampaigns,
@@ -86,6 +87,39 @@ describe("organiser verification", () => {
       where: { id: user.id },
     });
     expect(saved.isVerifiedOrganiser).toBe(false);
+  });
+
+  it("reveals identity data on demand and audits access without storing the ID", async () => {
+    const user = await createUser();
+    const reviewer = await admin();
+    const request = await submitVerification(user.id, {
+      fullName: "Ama Serwaa",
+      phone: "+233240000000",
+      idType: "Ghana Card",
+      idNumber: "GHA-SECRET-123",
+    });
+
+    const queue = await listAdminVerifications({
+      page: 1,
+      status: "PENDING",
+    });
+    expect(queue.items[0]).not.toHaveProperty("idNumber");
+
+    await expect(
+      viewVerificationIdentity(reviewer.id, request.id),
+    ).resolves.toEqual({
+      idType: "Ghana Card",
+      idNumber: "GHA-SECRET-123",
+    });
+
+    const audit = await prisma.auditLog.findFirstOrThrow({
+      where: { action: "verification.identity_viewed" },
+    });
+    expect(JSON.stringify(audit.detail)).not.toContain("GHA-SECRET-123");
+    expect(audit.detail).toMatchObject({
+      verificationRequestId: request.id,
+      targetUserId: user.id,
+    });
   });
 
   it("refuses to submit when already verified", async () => {

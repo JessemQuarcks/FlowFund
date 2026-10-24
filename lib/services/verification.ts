@@ -106,9 +106,44 @@ export async function listAdminVerifications(params: {
     orderBy: [{ dateAdded: "asc" }, { id: "asc" }],
     skip: (page - 1) * ADMIN_QUEUE_PAGE_SIZE,
     take: ADMIN_QUEUE_PAGE_SIZE,
-    include: { user: { select: { id: true, name: true, email: true } } },
+    select: {
+      id: true,
+      userId: true,
+      fullName: true,
+      phone: true,
+      idType: true,
+      status: true,
+      dateAdded: true,
+      user: { select: { id: true, name: true, email: true } },
+    },
   });
   return { items, total, page, totalPages, perPage: ADMIN_QUEUE_PAGE_SIZE };
+}
+
+export async function viewVerificationIdentity(
+  adminId: string,
+  requestId: string,
+) {
+  return prisma.$transaction(async (tx) => {
+    const request = await tx.verificationRequest.findUnique({
+      where: { id: requestId },
+      select: { idType: true, idNumber: true, userId: true },
+    });
+    if (!request) throw errors.notFound("Verification request not found");
+
+    await tx.auditLog.create({
+      data: {
+        action: "verification.identity_viewed",
+        actorUserId: adminId,
+        detail: {
+          verificationRequestId: requestId,
+          targetUserId: request.userId,
+        },
+      },
+    });
+
+    return { idType: request.idType, idNumber: request.idNumber };
+  });
 }
 
 // Admin approves or rejects a submission. Approval marks the organiser

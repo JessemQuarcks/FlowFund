@@ -1,6 +1,30 @@
 import { describe, expect, it } from "vitest";
 import { signupSchema } from "@/schemas/auth";
 import { createEventSchema, updateEventSchema } from "@/schemas/event";
+import { reviewVerificationSchema } from "@/schemas/verification";
+
+describe("reviewVerificationSchema", () => {
+  it("accepts an optional reviewer note and trims it", () => {
+    expect(
+      reviewVerificationSchema.parse({
+        decision: "reject",
+        notes: "  ID image unreadable  ",
+      }),
+    ).toEqual({ decision: "reject", notes: "ID image unreadable" });
+    expect(reviewVerificationSchema.parse({ decision: "reject" })).toEqual({
+      decision: "reject",
+    });
+  });
+
+  it("limits reviewer notes to 1000 characters", () => {
+    expect(
+      reviewVerificationSchema.safeParse({
+        decision: "reject",
+        notes: "x".repeat(1001),
+      }).success,
+    ).toBe(false);
+  });
+});
 
 describe("signupSchema", () => {
   const valid = { name: "Ama", email: "ama@example.com", password: "secret1!" };
