@@ -73,6 +73,7 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: flowfund
+          MYSQL_DATABASE: flowfund_test
         ports:
           - 3306:3306
         options: >-
