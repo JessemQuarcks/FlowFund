@@ -102,7 +102,9 @@ export function AdminAction({
         <AlertDialogHeader>
           <AlertDialogTitle>{confirmText}</AlertDialogTitle>
           {confirmDescription && (
-            <AlertDialogDescription>{confirmDescription}</AlertDialogDescription>
+            <AlertDialogDescription>
+              {confirmDescription}
+            </AlertDialogDescription>
           )}
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -123,8 +125,8 @@ export function AdminAction({
             }}
           >
             {loading
-              ? pendingLabel ?? confirmLabel ?? "Processing..."
-              : confirmLabel ?? "Continue"}
+              ? (pendingLabel ?? confirmLabel ?? "Processing...")
+              : (confirmLabel ?? "Continue")}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
