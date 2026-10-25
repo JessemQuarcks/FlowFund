@@ -26,7 +26,7 @@ Campaign status, report status, verification status, and banned/active account f
 
 ### 4. Prevent confusing or accidental actions
 
-Show a clear pending/actioned state, disable conflicting actions while a request is in progress, and make consequential actions explain what they change. For example, distinguish dismissing a report from suspending a campaign, and clarify the effect of banning an account.
+**Implemented:** admin actions now use explicit contextual confirmation dialogs, clearly distinguish “dismiss report” from “suspend campaign,” and disable overlapping actions while a request is pending. Buttons also surface busy states such as “Suspending...” or “Banning...” so admins can see when the moderation change is in flight.
 
 ### 5. Polish loading, empty, and error states
 

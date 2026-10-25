@@ -15,6 +15,7 @@ import { formatMoney } from "@/lib/money";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { AdminAction } from "@/components/admin/admin-action";
+import { ReportActionGroup } from "@/components/admin/report-action-group";
 import { VerificationReviewActions } from "@/components/admin/verification-review-actions";
 import {
   AdminTabs,
@@ -272,19 +273,7 @@ export default async function AdminPage({
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <AdminAction
-                      url={`/api/admin/reports/${r.id}`}
-                      body={{ action: "suspend" }}
-                      label="Suspend campaign"
-                      variant="destructive"
-                      confirmText="Suspend this campaign?"
-                      successText="Campaign suspended"
-                    />
-                    <AdminAction
-                      url={`/api/admin/reports/${r.id}`}
-                      body={{ action: "dismiss" }}
-                      label="Dismiss"
-                    />
+                    <ReportActionGroup reportId={r.id} />
                   </div>
                   <details className="w-full border-t pt-3">
                     <summary className="cursor-pointer text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
@@ -624,17 +613,24 @@ export default async function AdminPage({
                       <AdminAction
                         url={`/api/admin/users/${u.id}/ban`}
                         body={{ banned: false }}
-                        label="Unban"
+                        label="Unban account"
                         variant="gradient"
+                        confirmText="Unban this user?"
+                        confirmDescription="This restores their account access and allows them to return to normal platform activity."
+                        confirmLabel="Unban account"
+                        pendingLabel="Unbanning..."
                         successText="User unbanned"
                       />
                     ) : (
                       <AdminAction
                         url={`/api/admin/users/${u.id}/ban`}
                         body={{ banned: true }}
-                        label="Ban"
+                        label="Ban account"
                         variant="destructive"
                         confirmText="Ban this user?"
+                        confirmDescription="This hides their account from public activity and prevents them from creating or managing campaigns until an admin reinstates access."
+                        confirmLabel="Ban account"
+                        pendingLabel="Banning..."
                         successText="User banned"
                       />
                     ))}

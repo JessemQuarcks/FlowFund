@@ -159,10 +159,19 @@ export async function resolveReport(
       }),
     ]);
   } else {
-    await prisma.report.update({
-      where: { id: reportId },
-      data: { status: "DISMISSED" },
-    });
+    await prisma.$transaction([
+      prisma.report.update({
+        where: { id: reportId },
+        data: { status: "DISMISSED" },
+      }),
+      prisma.auditLog.create({
+        data: {
+          action: "report.dismissed",
+          actorUserId: adminId,
+          detail: { eventId: report.eventId, reportId },
+        },
+      }),
+    ]);
   }
 }
 
