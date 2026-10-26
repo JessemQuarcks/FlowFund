@@ -30,7 +30,9 @@ Campaign status, report status, verification status, and banned/active account f
 
 ### 5. Polish loading, empty, and error states
 
-Show useful error and retry feedback when console data fails to load, and distinguish “nothing to review” from “the queue failed to load.” As more operational areas are added, consider an admin layout with persistent navigation rather than expanding a single page indefinitely.
+**Implemented:** the admin route now shows a console-shaped loading skeleton while its server data loads, a route-specific error with a retry action when loading fails, and queue-specific empty messages that distinguish no work to review from searches or filters with no matches. Filtered empty states offer a direct way to clear the current search and filters.
+
+As more operational areas are added, consider an admin layout with persistent navigation rather than expanding a single page indefinitely.
 
 ## Backend recommendations
 
