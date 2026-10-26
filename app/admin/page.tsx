@@ -190,7 +190,22 @@ export default async function AdminPage({
             ]}
           />
           {verifications.items.length === 0 ? (
-            <Empty>No verifications match these filters.</Empty>
+            <Empty
+              title={
+                params.q || params.verificationStatus !== "PENDING"
+                  ? "No verification requests match these filters."
+                  : "No pending verification requests."
+              }
+              clearHref={
+                params.q || params.verificationStatus !== "PENDING"
+                  ? "/admin?tab=verifications"
+                  : undefined
+              }
+            >
+              {params.q || params.verificationStatus !== "PENDING"
+                ? "Try changing your search or filters."
+                : "New applications that need review will appear here."}
+            </Empty>
           ) : (
             <div className="space-y-3">
               {verifications.items.map((v) => (
@@ -251,7 +266,26 @@ export default async function AdminPage({
             ]}
           />
           {reports.items.length === 0 ? (
-            <Empty>No reports match these filters.</Empty>
+            <Empty
+              title={
+                params.q
+                  ? "No reports match your search."
+                  : params.reportStatus === "OPEN"
+                    ? "No open reports to review."
+                    : params.reportStatus === "all"
+                      ? "No reports have been submitted yet."
+                      : `No ${params.reportStatus.toLowerCase()} reports found.`
+              }
+              clearHref={
+                params.q || params.reportStatus !== "OPEN"
+                  ? "/admin?tab=reports"
+                  : undefined
+              }
+            >
+              {params.q || params.reportStatus !== "OPEN"
+                ? "Try changing your search or filters."
+                : "New reports will appear here for review."}
+            </Empty>
           ) : (
             <div className="space-y-3">
               {reports.items.map((r) => (
@@ -488,7 +522,22 @@ export default async function AdminPage({
             ]}
           />
           {campaigns.items.length === 0 ? (
-            <Empty>No campaigns match these filters.</Empty>
+            <Empty
+              title={
+                params.q || params.campaignStatus !== "all"
+                  ? "No campaigns match these filters."
+                  : "No campaigns have been created yet."
+              }
+              clearHref={
+                params.q || params.campaignStatus !== "all"
+                  ? "/admin?tab=campaigns"
+                  : undefined
+              }
+            >
+              {params.q || params.campaignStatus !== "all"
+                ? "Try changing your search or filters."
+                : "Campaigns will appear here as organisers create them."}
+            </Empty>
           ) : (
             <div className="space-y-3">
               {campaigns.items.map((c) => (
@@ -584,7 +633,28 @@ export default async function AdminPage({
             ]}
           />
           {users.items.length === 0 ? (
-            <Empty>No users match these filters.</Empty>
+            <Empty
+              title={
+                params.q ||
+                params.verificationStatus !== "all" ||
+                params.banned !== "all"
+                  ? "No users match these filters."
+                  : "No user accounts found."
+              }
+              clearHref={
+                params.q ||
+                params.verificationStatus !== "all" ||
+                params.banned !== "all"
+                  ? "/admin?tab=users"
+                  : undefined
+              }
+            >
+              {params.q ||
+              params.verificationStatus !== "all" ||
+              params.banned !== "all"
+                ? "Try changing your search or filters."
+                : "New accounts will appear here once they register."}
+            </Empty>
           ) : (
             <div className="space-y-3">
               {users.items.map((u) => (
@@ -670,10 +740,27 @@ function Row({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
+function Empty({
+  title,
+  children,
+  clearHref,
+}: {
+  title: string;
+  children: React.ReactNode;
+  clearHref?: string;
+}) {
   return (
-    <div className="rounded-xl border bg-card py-12 text-center text-sm text-muted-foreground shadow-soft">
-      {children}
+    <div className="rounded-xl border bg-card px-6 py-12 text-center shadow-soft">
+      <h2 className="font-semibold">{title}</h2>
+      <p className="mt-2 text-sm text-muted-foreground">{children}</p>
+      {clearHref && (
+        <Link
+          href={clearHref}
+          className="mt-4 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Clear search and filters
+        </Link>
+      )}
     </div>
   );
 }
