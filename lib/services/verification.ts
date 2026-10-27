@@ -47,6 +47,7 @@ export async function submitVerification(
         phone: input.phone,
         idType: input.idType,
         idNumber: input.idNumber,
+        idNumberLast4: lastFour(input.idNumber),
         status: "PENDING",
       },
     }),
