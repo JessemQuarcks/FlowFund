@@ -101,4 +101,25 @@ describe("admin route validation and workflow", () => {
     );
     expect(stale.status).toBe(409);
   });
+
+  it("resolves an open report (200) then rejects the stale repeat (409)", async () => {
+    const admin = await makeAdmin();
+    const owner = await createUser();
+    const event = await createEventWithFundraiser(owner.id);
+    await createReport(event.id, { reason: "Spam" });
+    const report = await prisma.report.findFirstOrThrow();
+    signedInAs(admin.id);
+
+    const ok = await resolveReportRoute(
+      post({ action: "dismiss" }),
+      ctx(report.id),
+    );
+    expect(ok.status).toBe(200);
+
+    const stale = await resolveReportRoute(
+      post({ action: "suspend" }),
+      ctx(report.id),
+    );
+    expect(stale.status).toBe(409);
+  });
 });
