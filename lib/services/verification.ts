@@ -178,13 +178,26 @@ export async function reviewVerification(
   });
   if (!request) throw errors.notFound("Verification request not found");
 
+  // State-aware: only a pending request can be reviewed. A stale or repeated
+  // decision is rejected rather than silently overwriting the outcome.
+  if (request.status !== "PENDING") {
+    throw errors.conflict("This verification has already been reviewed");
+  }
+
   const approved = input.decision === "approve";
   const status = approved ? "VERIFIED" : "REJECTED";
 
   await prisma.$transaction([
     prisma.verificationRequest.update({
       where: { id: requestId },
-      data: { status, reviewNotes: input.notes, reviewedById: adminId },
+      data: {
+        status,
+        reviewNotes: input.notes,
+        reviewedById: adminId,
+        // Retention: purge the full ID once a decision is made; keep only the
+        // last four for reference.
+        idNumber: null,
+      },
     }),
     prisma.user.update({
       where: { id: request.userId },
