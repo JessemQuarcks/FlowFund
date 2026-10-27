@@ -340,6 +340,61 @@ describe("moderation", () => {
     ).rejects.toMatchObject({ status: 400 });
   });
 
+  it("rejects resolving an already-resolved report with a conflict", async () => {
+    const owner = await createUser();
+    const reviewer = await admin();
+    const event = await createEventWithFundraiser(owner.id);
+    await createReport(event.id, { reason: "Spam" });
+    const report = await prisma.report.findFirstOrThrow();
+
+    await resolveReport(reviewer.id, report.id, "dismiss");
+    await expect(
+      resolveReport(reviewer.id, report.id, "suspend"),
+    ).rejects.toMatchObject({ status: 409 });
+
+    // The campaign was not suspended by the stale second call.
+    expect(
+      (await prisma.event.findUniqueOrThrow({ where: { id: event.id } }))
+        .status,
+    ).toBe("ACTIVE");
+    // Dismissal is audited with the state change.
+    const audit = await prisma.auditLog.findFirstOrThrow({
+      where: { action: "report.dismissed" },
+    });
+    expect(audit.detail).toMatchObject({ from: "OPEN", to: "DISMISSED" });
+  });
+
+  it("rejects no-op and invalid campaign status transitions", async () => {
+    const reviewer = await admin();
+    const owner = await createUser();
+    const event = await createEventWithFundraiser(owner.id);
+
+    // Reinstating an active campaign is invalid.
+    await expect(
+      setEventStatus(reviewer.id, event.id, "ACTIVE"),
+    ).rejects.toMatchObject({ status: 409 });
+
+    await setEventStatus(reviewer.id, event.id, "SUSPENDED");
+    // Suspending an already-suspended campaign is a no-op conflict.
+    await expect(
+      setEventStatus(reviewer.id, event.id, "SUSPENDED"),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
+  it("rejects a no-op ban/unban with a conflict", async () => {
+    const reviewer = await admin();
+    const user = await createUser();
+
+    await expect(
+      setUserBanned(reviewer.id, user.id, false),
+    ).rejects.toMatchObject({ status: 409 });
+
+    await setUserBanned(reviewer.id, user.id, true);
+    await expect(
+      setUserBanned(reviewer.id, user.id, true),
+    ).rejects.toMatchObject({ status: 409 });
+  });
+
   it("counts work for the admin dashboard", async () => {
     const owner = await createUser();
     const event = await createEventWithFundraiser(owner.id);
