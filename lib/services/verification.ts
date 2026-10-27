@@ -148,14 +148,21 @@ export async function viewVerificationIdentity(
       data: {
         action: "verification.identity_viewed",
         actorUserId: adminId,
+        // Minimal: never copy the ID value into the log.
         detail: {
           verificationRequestId: requestId,
           targetUserId: request.userId,
+          redacted: request.idNumber === null,
         },
       },
     });
 
-    return { idType: request.idType, idNumber: request.idNumber };
+    // Full number only while retained (PENDING); otherwise just the last four.
+    return {
+      idType: request.idType,
+      idNumber: request.idNumber,
+      idNumberLast4: request.idNumberLast4,
+    };
   });
 }
 
