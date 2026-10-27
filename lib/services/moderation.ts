@@ -221,9 +221,18 @@ export async function setEventStatus(
 ) {
   const event = await prisma.event.findUnique({
     where: { id: eventId },
-    select: { id: true },
+    select: { id: true, status: true },
   });
   if (!event) throw errors.notFound("Campaign not found");
+
+  // State-aware transitions: a campaign can only be suspended if it isn't
+  // already, and reinstated only from a suspended state.
+  if (event.status === status) {
+    throw errors.conflict(`Campaign is already ${status.toLowerCase()}`);
+  }
+  if (status === "ACTIVE" && event.status !== "SUSPENDED") {
+    throw errors.conflict("Only a suspended campaign can be reinstated");
+  }
 
   await prisma.$transaction([
     prisma.event.update({ where: { id: eventId }, data: { status } }),
