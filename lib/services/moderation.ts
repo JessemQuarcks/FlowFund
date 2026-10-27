@@ -241,7 +241,7 @@ export async function setEventStatus(
         action:
           status === "SUSPENDED" ? "campaign.suspended" : "campaign.reinstated",
         actorUserId: adminId,
-        detail: { eventId },
+        detail: { eventId, from: event.status, to: status },
       },
     }),
   ]);
