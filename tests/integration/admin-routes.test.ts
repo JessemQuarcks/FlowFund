@@ -48,3 +48,24 @@ beforeEach(async () => {
 afterAll(async () => {
   await prisma.$disconnect();
 });
+
+describe("admin route authorization", () => {
+  it("rejects an unauthenticated request with 401", async () => {
+    signedInAs(null);
+    const res = await reviewVerificationRoute(
+      post({ decision: "approve" }),
+      ctx("x"),
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a non-admin with 403", async () => {
+    const user = await createUser();
+    signedInAs(user.id);
+    const res = await reviewVerificationRoute(
+      post({ decision: "approve" }),
+      ctx("x"),
+    );
+    expect(res.status).toBe(403);
+  });
+});
