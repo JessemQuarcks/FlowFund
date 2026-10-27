@@ -137,8 +137,22 @@ export async function resolveReport(
   reportId: string,
   action: "dismiss" | "suspend",
 ) {
-  const report = await prisma.report.findUnique({ where: { id: reportId } });
+  const report = await prisma.report.findUnique({
+    where: { id: reportId },
+    select: {
+      id: true,
+      status: true,
+      eventId: true,
+      event: { select: { status: true } },
+    },
+  });
   if (!report) throw errors.notFound("Report not found");
+
+  // State-aware: only an open report can be resolved. Repeated or stale
+  // resolutions are rejected instead of re-applying.
+  if (report.status !== "OPEN") {
+    throw errors.conflict("This report has already been resolved");
+  }
 
   if (action === "suspend") {
     await prisma.$transaction([
