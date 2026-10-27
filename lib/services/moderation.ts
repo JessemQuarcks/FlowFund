@@ -259,11 +259,17 @@ export async function setUserBanned(
   }
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: true },
+    select: { role: true, isBanned: true },
   });
   if (!user) throw errors.notFound("User not found");
   if (user.role === "ADMIN") {
     throw errors.badRequest("Admins cannot be banned");
+  }
+  // State-aware: reject a no-op ban/unban so a stale request can't double-apply.
+  if (user.isBanned === banned) {
+    throw errors.conflict(
+      banned ? "User is already banned" : "User is not banned",
+    );
   }
 
   await prisma.$transaction([
