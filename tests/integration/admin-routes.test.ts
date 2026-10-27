@@ -69,3 +69,12 @@ describe("admin route authorization", () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe("admin route validation and workflow", () => {
+  it("returns 400 on an invalid body", async () => {
+    const admin = await makeAdmin();
+    signedInAs(admin.id);
+    const res = await resolveReportRoute(post({ action: "nuke" }), ctx("x"));
+    expect(res.status).toBe(400);
+  });
+});
