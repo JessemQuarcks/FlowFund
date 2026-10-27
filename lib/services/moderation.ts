@@ -200,7 +200,12 @@ export async function resolveReport(
         data: {
           action: "report.dismissed",
           actorUserId: adminId,
-          detail: { eventId: report.eventId, reportId },
+          detail: {
+            eventId: report.eventId,
+            reportId,
+            from: "OPEN",
+            to: "DISMISSED",
+          },
         },
       }),
     ]);
