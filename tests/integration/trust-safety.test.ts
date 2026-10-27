@@ -133,6 +133,60 @@ describe("organiser verification", () => {
       status: 409,
     });
   });
+
+  it("purges the full ID after a decision but keeps the last four", async () => {
+    const user = await createUser();
+    const reviewer = await admin();
+    const req = await submitVerification(user.id, {
+      ...kyc,
+      idNumber: "GHA-9876",
+    });
+
+    await reviewVerification(reviewer.id, req.id, { decision: "approve" });
+
+    const saved = await prisma.verificationRequest.findUniqueOrThrow({
+      where: { id: req.id },
+    });
+    expect(saved.idNumber).toBeNull();
+    expect(saved.idNumberLast4).toBe("9876");
+    // After redaction, a reveal returns only the masked value.
+    const identity = await viewVerificationIdentity(reviewer.id, req.id);
+    expect(identity.idNumber).toBeNull();
+    expect(identity.idNumberLast4).toBe("9876");
+  });
+
+  it("rejects a stale or repeated verification review with a conflict", async () => {
+    const user = await createUser();
+    const reviewer = await admin();
+    const req = await submitVerification(user.id, kyc);
+
+    await reviewVerification(reviewer.id, req.id, { decision: "approve" });
+    await expect(
+      reviewVerification(reviewer.id, req.id, { decision: "reject" }),
+    ).rejects.toMatchObject({ status: 409 });
+
+    // The first decision stands.
+    expect(
+      (await prisma.user.findUniqueOrThrow({ where: { id: user.id } }))
+        .verificationStatus,
+    ).toBe("VERIFIED");
+  });
+
+  it("records the previous and new state on review, without the ID", async () => {
+    const user = await createUser();
+    const reviewer = await admin();
+    const req = await submitVerification(user.id, {
+      ...kyc,
+      idNumber: "GHA-AUDIT-55",
+    });
+    await reviewVerification(reviewer.id, req.id, { decision: "approve" });
+
+    const audit = await prisma.auditLog.findFirstOrThrow({
+      where: { action: "verification.approved" },
+    });
+    expect(audit.detail).toMatchObject({ from: "PENDING", to: "VERIFIED" });
+    expect(JSON.stringify(audit.detail)).not.toContain("GHA-AUDIT-55");
+  });
 });
 
 describe("moderation", () => {
