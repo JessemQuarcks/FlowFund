@@ -317,6 +317,7 @@ async function main() {
           phone: "+233 24 000 0000",
           idType: "Ghana Card",
           idNumber: "GHA-000000000-0",
+          idNumberLast4: "0000",
           status: "PENDING",
         },
       });
