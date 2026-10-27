@@ -19,6 +19,12 @@ export type VerificationState = {
   } | null;
 };
 
+// Last four characters of an ID, kept for reference after the full number is
+// purged. Non-alphanumerics are stripped first so spacing/dashes don't matter.
+function lastFour(idNumber: string): string {
+  return idNumber.replace(/[^A-Za-z0-9]/g, "").slice(-4);
+}
+
 // An organiser submits their KYC details for review. Blocked once verified.
 export async function submitVerification(
   userId: string,
