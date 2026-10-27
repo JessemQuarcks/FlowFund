@@ -15,17 +15,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-type Identity = { idType: string; idNumber: string };
+type Identity = {
+  idType: string;
+  // Full number only while the request is pending; purged after a decision,
+  // leaving the last four for reference.
+  idNumber: string | null;
+  idNumberLast4: string | null;
+};
 type Decision = "approve" | "reject";
 
 function isIdentity(value: unknown): value is Identity {
   if (typeof value !== "object" || value === null) return false;
-  return (
-    "idType" in value &&
-    typeof value.idType === "string" &&
-    "idNumber" in value &&
-    typeof value.idNumber === "string"
-  );
+  return "idType" in value && typeof value.idType === "string";
+}
+
+function identityText(identity: Identity): string {
+  if (identity.idNumber) return identity.idNumber;
+  if (identity.idNumberLast4) return `••••${identity.idNumberLast4}`;
+  return "redacted";
 }
 
 export function VerificationReviewActions({
