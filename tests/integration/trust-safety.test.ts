@@ -110,6 +110,7 @@ describe("organiser verification", () => {
     ).resolves.toEqual({
       idType: "Ghana Card",
       idNumber: "GHA-SECRET-123",
+      idNumberLast4: "T123",
     });
 
     const audit = await prisma.auditLog.findFirstOrThrow({
