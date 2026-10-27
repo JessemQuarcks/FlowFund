@@ -168,7 +168,25 @@ export async function resolveReport(
         data: {
           action: "campaign.suspended",
           actorUserId: adminId,
-          detail: { eventId: report.eventId, reportId, via: "report" },
+          detail: {
+            eventId: report.eventId,
+            reportId,
+            via: "report",
+            from: report.event.status,
+            to: "SUSPENDED",
+          },
+        },
+      }),
+      prisma.auditLog.create({
+        data: {
+          action: "report.actioned",
+          actorUserId: adminId,
+          detail: {
+            eventId: report.eventId,
+            reportId,
+            from: "OPEN",
+            to: "ACTIONED",
+          },
         },
       }),
     ]);
