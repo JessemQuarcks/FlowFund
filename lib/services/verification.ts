@@ -213,7 +213,9 @@ export async function reviewVerification(
         detail: {
           verificationRequestId: requestId,
           targetUserId: request.userId,
-          notes: input.notes ?? null,
+          from: request.status,
+          to: status,
+          reason: input.notes ?? null,
         },
       },
     }),
