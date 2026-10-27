@@ -77,4 +77,28 @@ describe("admin route validation and workflow", () => {
     const res = await resolveReportRoute(post({ action: "nuke" }), ctx("x"));
     expect(res.status).toBe(400);
   });
+
+  it("reviews a pending verification (200) then rejects the stale repeat (409)", async () => {
+    const admin = await makeAdmin();
+    const applicant = await createUser();
+    const req = await submitVerification(applicant.id, {
+      fullName: "Ama",
+      phone: "+233240000000",
+      idType: "Ghana Card",
+      idNumber: "GHA-1",
+    });
+    signedInAs(admin.id);
+
+    const ok = await reviewVerificationRoute(
+      post({ decision: "approve" }),
+      ctx(req.id),
+    );
+    expect(ok.status).toBe(200);
+
+    const stale = await reviewVerificationRoute(
+      post({ decision: "reject" }),
+      ctx(req.id),
+    );
+    expect(stale.status).toBe(409);
+  });
 });
