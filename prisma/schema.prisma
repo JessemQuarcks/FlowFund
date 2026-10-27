@@ -89,7 +89,11 @@ model VerificationRequest {
   fullName String
   phone String
   idType String
-  idNumber String
+  // Full ID number is retained only while the request is PENDING; once an
+  // admin decides, it is purged and only the last four digits are kept
+  // (idNumberLast4) for reference. See lib/services/verification.
+  idNumber String?
+  idNumberLast4 String?
   status VerificationStatus @default(PENDING)
   reviewNotes String? @db.Text
   reviewedById String?
