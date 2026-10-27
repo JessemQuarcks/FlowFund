@@ -119,6 +119,7 @@ export async function listAdminVerifications(params: {
       fullName: true,
       phone: true,
       idType: true,
+      idNumberLast4: true,
       status: true,
       dateAdded: true,
       user: { select: { id: true, name: true, email: true } },
