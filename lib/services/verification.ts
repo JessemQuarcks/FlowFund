@@ -135,7 +135,12 @@ export async function viewVerificationIdentity(
   return prisma.$transaction(async (tx) => {
     const request = await tx.verificationRequest.findUnique({
       where: { id: requestId },
-      select: { idType: true, idNumber: true, userId: true },
+      select: {
+        idType: true,
+        idNumber: true,
+        idNumberLast4: true,
+        userId: true,
+      },
     });
     if (!request) throw errors.notFound("Verification request not found");
 
