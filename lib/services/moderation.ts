@@ -278,7 +278,7 @@ export async function setUserBanned(
       data: {
         action: banned ? "user.banned" : "user.unbanned",
         actorUserId: adminId,
-        detail: { targetUserId: userId },
+        detail: { targetUserId: userId, from: user.isBanned, to: banned },
       },
     }),
   ]);
