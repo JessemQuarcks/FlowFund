@@ -163,7 +163,7 @@ export function VerificationReviewActions({
           aria-label="Revealed identity number"
         >
           {identity.idType}:{" "}
-          <span className="font-medium">{identity.idNumber}</span>
+          <span className="font-medium">{identityText(identity)}</span>
         </p>
       )}
 
