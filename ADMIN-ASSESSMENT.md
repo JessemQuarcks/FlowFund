@@ -38,17 +38,15 @@ As more operational areas are added, consider an admin layout with persistent na
 
 ### 1. Make actions state-aware and safe to repeat
 
-Verification reviews and report resolutions should only apply to records in an eligible state. Define allowed state transitions and reject stale or conflicting actions with an appropriate conflict response. This prevents repeated or out-of-order requests from silently changing an already-reviewed record.
+**Implemented (2026-10-27):** verification review requires a `PENDING` request, report resolution requires an `OPEN` report, campaign status changes reject no-ops and only allow reinstating a suspended campaign, and ban/unban rejects a no-op. Each stale or conflicting action now returns a `409 CONFLICT` instead of silently re-applying.
 
 ### 2. Complete audit coverage
 
-Verification, campaign status, and user ban actions are logged, but dismissing a report currently updates its status without creating an audit entry. Audit every admin decision—including report dismissal—with the actor, target, timestamp, previous and new state, and an appropriate reason.
-
-Keep audit metadata minimal: do not include full identity numbers or unnecessary personal details.
+**Implemented (2026-10-27):** every admin decision is audited with the actor, target, previous→new state (`from`/`to`), and the reason where one is captured (e.g. a rejection note). Report dismissal and report-driven suspension both write audit entries. Audit metadata stays minimal — identity numbers are never copied into the log (the identity-view entry only records whether the value was redacted).
 
 ### 3. Protect KYC data
 
-Verification records contain full ID numbers and phone numbers, and the admin queue displays the full ID number. Limit exposure, mask values by default, define retention and deletion rules, and assess encryption and access logging for identity data.
+**Implemented (2026-10-27):** the full ID number is retained only while a request is `PENDING`; once an admin decides, it is purged and only the last four digits (`idNumberLast4`) are kept for reference. The admin queue never returns the full number; revealing it is an admin-only, no-store, audited action. Remaining follow-ups: masking/limiting phone numbers, encryption at rest, and a formal retention window with scheduled deletion.
 
 ### 4. Add operational controls for money-related administration
 
