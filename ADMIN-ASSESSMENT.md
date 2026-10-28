@@ -50,15 +50,15 @@ As more operational areas are added, consider an admin layout with persistent na
 
 ### 4. Add operational controls for money-related administration
 
-The roadmap identifies a payout-approval queue and admin-initiated refunds as unfinished. Implement these only alongside clear approval policies, appropriate organiser verification, audit trails, and tested payment-state transitions. Admin actions involving money should be designed around the payment ledger and provider reconciliation rather than directly changing displayed totals.
+**Deferred (policy-gated):** the payout-approval queue and admin-initiated refunds depend on an approval policy and tested provider payment-state transitions that aren't settled yet. When built, they must be driven by the payment ledger and Paystack reconciliation rather than editing displayed totals. Not started in this pass.
 
 ### 5. Test authorization and workflow boundaries
 
-The existing trust-and-safety integration tests provide useful service-level coverage. Add route-level tests for non-admin access, validation failures, stale or repeated actions, and unexpected states. Add UI coverage for review workflows, rejection notes, and loading/error states.
+**Implemented (2026-10-27):** route-level integration tests now drive the real admin handlers with a mocked session and cover unauthenticated (401), non-admin (403), invalid body (400), the happy path (200) and stale/repeated actions (409). Service-level tests cover the new state transitions and KYC retention. Remaining follow-up: component/UI tests for the review workflow, rejection notes, and loading/error states.
 
 ### 6. Plan for stronger admin access controls
 
-The current authorization model has a single `ADMIN` role. Before a larger staff team uses the console, consider role separation, multi-factor authentication for administrators, and a documented, auditable process for granting and revoking admin access.
+**Deferred (follow-up):** still a single `ADMIN` role. Role separation, administrator MFA, and an auditable grant/revoke process are recommended before a larger staff team uses the console. Not started in this pass.
 
 ## Recommended order of work
 
