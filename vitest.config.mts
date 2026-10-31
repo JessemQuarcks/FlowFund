@@ -8,7 +8,7 @@ const root = dirname(fileURLToPath(import.meta.url));
 // talks to Google, Cloudinary or Paystack: those calls are mocked.
 const testEnv = {
   NODE_ENV: "test",
-  DATABASE_URL: "mysql://test:test@localhost:3306/unused",
+  DATABASE_URL: "postgresql://test:test@localhost:5432/unused",
   NEXTAUTH_URL: "http://localhost:3000",
   NEXTAUTH_SECRET: "test-secret",
   GOOGLE_CLIENT_ID: "test",

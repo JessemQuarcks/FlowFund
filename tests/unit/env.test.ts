@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseEnv } from "@/lib/env";
 
 const valid = {
-  DATABASE_URL: "mysql://user:pass@localhost:3306/flowfund",
+  DATABASE_URL: "postgresql://user:pass@localhost:5432/flowfund",
   NEXTAUTH_URL: "http://localhost:3000",
   NEXTAUTH_SECRET: "a-long-random-secret",
   GOOGLE_CLIENT_ID: "google-id",
@@ -33,10 +33,10 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...valid, NEXTAUTH_URL: "" })).not.toThrow();
   });
 
-  it("rejects a non-MySQL database URL", () => {
+  it("rejects a non-Postgres database URL", () => {
     expect(() =>
-      parseEnv({ ...valid, DATABASE_URL: "postgres://localhost/db" }),
-    ).toThrow(/DATABASE_URL: must be a mysql:\/\/ connection string/);
+      parseEnv({ ...valid, DATABASE_URL: "mysql://localhost/db" }),
+    ).toThrow(/DATABASE_URL: must be a postgresql:\/\/ connection string/);
   });
 
   it("rejects malformed Paystack keys", () => {
@@ -53,7 +53,7 @@ describe("parseEnv", () => {
 
   it("never includes values in the error", () => {
     try {
-      parseEnv({ ...valid, DATABASE_URL: "postgres://user:hunter2@db/x" });
+      parseEnv({ ...valid, DATABASE_URL: "mysql://user:hunter2@db/x" });
       expect.unreachable();
     } catch (error) {
       expect(String(error)).not.toContain("hunter2");

@@ -18,8 +18,9 @@ const schema = z
       .enum(["development", "test", "production"])
       .default("development"),
     DATABASE_URL: required("is required").refine(
-      (value) => value.startsWith("mysql://"),
-      "must be a mysql:// connection string",
+      (value) =>
+        value.startsWith("postgresql://") || value.startsWith("postgres://"),
+      "must be a postgresql:// connection string",
     ),
     // NextAuth infers the URL on Vercel; set it everywhere else.
     NEXTAUTH_URL: z.preprocess(

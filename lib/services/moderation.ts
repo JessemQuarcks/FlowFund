@@ -63,10 +63,10 @@ export async function listReports(params: {
   if (params.status !== "all") where.status = params.status;
   if (params.q) {
     where.OR = [
-      { reason: { contains: params.q } },
-      { details: { contains: params.q } },
-      { reporterEmail: { contains: params.q } },
-      { event: { title: { contains: params.q } } },
+      { reason: { contains: params.q, mode: "insensitive" } },
+      { details: { contains: params.q, mode: "insensitive" } },
+      { reporterEmail: { contains: params.q, mode: "insensitive" } },
+      { event: { title: { contains: params.q, mode: "insensitive" } } },
     ];
   }
 
@@ -313,10 +313,10 @@ export async function adminListCampaigns(params: {
   if (params.status !== "all") where.status = params.status;
   if (params.q) {
     where.OR = [
-      { title: { contains: params.q } },
-      { description: { contains: params.q } },
-      { user: { name: { contains: params.q } } },
-      { user: { email: { contains: params.q } } },
+      { title: { contains: params.q, mode: "insensitive" } },
+      { description: { contains: params.q, mode: "insensitive" } },
+      { user: { name: { contains: params.q, mode: "insensitive" } } },
+      { user: { email: { contains: params.q, mode: "insensitive" } } },
     ];
   }
 
@@ -353,8 +353,8 @@ export async function adminListUsers(params: {
   if (params.banned !== "all") where.isBanned = params.banned === "banned";
   if (params.q) {
     where.OR = [
-      { name: { contains: params.q } },
-      { email: { contains: params.q } },
+      { name: { contains: params.q, mode: "insensitive" } },
+      { email: { contains: params.q, mode: "insensitive" } },
     ];
   }
 

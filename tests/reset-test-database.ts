@@ -6,7 +6,7 @@ export function resetTestDatabase() {
   const url = process.env.TEST_DATABASE_URL;
   if (!url) {
     throw new Error(
-      "TEST_DATABASE_URL is not set. Point it at a disposable MySQL database " +
+      "TEST_DATABASE_URL is not set. Point it at a disposable Postgres database " +
         "(see README: Running tests).",
     );
   }

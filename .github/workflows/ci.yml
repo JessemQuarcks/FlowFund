@@ -13,9 +13,9 @@ permissions:
   contents: read
 
 env:
-  # Disposable databases on the MySQL service container below.
-  TEST_DATABASE_URL: mysql://root:flowfund@127.0.0.1:3306/flowfund_test
-  SHADOW_DATABASE_URL: mysql://root:flowfund@127.0.0.1:3306/flowfund_shadow
+  # Disposable databases on the Postgres service container below.
+  TEST_DATABASE_URL: postgresql://flowfund:flowfund@127.0.0.1:5432/flowfund_test
+  SHADOW_DATABASE_URL: postgresql://flowfund:flowfund@127.0.0.1:5432/flowfund_shadow
 
 jobs:
   checks:
@@ -37,15 +37,16 @@ jobs:
     name: Migrations and integration tests
     runs-on: ubuntu-latest
     services:
-      mysql:
-        image: mysql:8.4
+      postgres:
+        image: postgres:16
         env:
-          MYSQL_ROOT_PASSWORD: flowfund
-          MYSQL_DATABASE: flowfund_shadow
+          POSTGRES_USER: flowfund
+          POSTGRES_PASSWORD: flowfund
+          POSTGRES_DB: flowfund_shadow
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pflowfund"
+          --health-cmd="pg_isready -U flowfund"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20
@@ -69,15 +70,16 @@ jobs:
     name: Build and end-to-end tests
     runs-on: ubuntu-latest
     services:
-      mysql:
-        image: mysql:8.4
+      postgres:
+        image: postgres:16
         env:
-          MYSQL_ROOT_PASSWORD: flowfund
-          MYSQL_DATABASE: flowfund_test
+          POSTGRES_USER: flowfund
+          POSTGRES_PASSWORD: flowfund
+          POSTGRES_DB: flowfund_test
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -pflowfund"
+          --health-cmd="pg_isready -U flowfund"
           --health-interval=5s
           --health-timeout=5s
           --health-retries=20

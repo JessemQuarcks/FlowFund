@@ -97,11 +97,11 @@ export async function listAdminVerifications(params: {
   if (params.status !== "all") where.status = params.status;
   if (params.q) {
     where.OR = [
-      { fullName: { contains: params.q } },
-      { phone: { contains: params.q } },
-      { idType: { contains: params.q } },
-      { user: { name: { contains: params.q } } },
-      { user: { email: { contains: params.q } } },
+      { fullName: { contains: params.q, mode: "insensitive" } },
+      { phone: { contains: params.q, mode: "insensitive" } },
+      { idType: { contains: params.q, mode: "insensitive" } },
+      { user: { name: { contains: params.q, mode: "insensitive" } } },
+      { user: { email: { contains: params.q, mode: "insensitive" } } },
     ];
   }
 

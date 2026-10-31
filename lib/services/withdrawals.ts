@@ -114,7 +114,7 @@ export async function requestWithdrawal(
       const rows = await tx.$queryRaw<
         { raisedAmount: number; totalWithdrawn: number }[]
       >(
-        Prisma.sql`SELECT raisedAmount, totalWithdrawn FROM Fundraiser WHERE id = ${input.fundraiserId} FOR UPDATE`,
+        Prisma.sql`SELECT "raisedAmount", "totalWithdrawn" FROM "Fundraiser" WHERE id = ${input.fundraiserId} FOR UPDATE`,
       );
       const current = rows[0];
       if (!current) throw errors.notFound("Fundraiser not found");

@@ -60,8 +60,8 @@ export function buildDiscoverWhere(
   if (params.q) {
     and.push({
       OR: [
-        { title: { contains: params.q } },
-        { description: { contains: params.q } },
+        { title: { contains: params.q, mode: "insensitive" } },
+        { description: { contains: params.q, mode: "insensitive" } },
       ],
     });
   }

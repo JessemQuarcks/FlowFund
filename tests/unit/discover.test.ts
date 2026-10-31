@@ -67,8 +67,8 @@ describe("buildDiscoverWhere", () => {
       AND: [
         {
           OR: [
-            { title: { contains: "school" } },
-            { description: { contains: "school" } },
+            { title: { contains: "school", mode: "insensitive" } },
+            { description: { contains: "school", mode: "insensitive" } },
           ],
         },
       ],

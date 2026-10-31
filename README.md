@@ -2,25 +2,25 @@
 
 A fundraising platform for Ghana: organisers create events with a fundraiser, donors give in GH₵ through Paystack, and organisers track what they have raised.
 
-Built with Next.js 15 (App Router), Prisma on MySQL, NextAuth v4, Paystack and Cloudinary.
+Built with Next.js 15 (App Router), Prisma on PostgreSQL, NextAuth v4, Paystack and Cloudinary.
 
 > **Status:** not yet ready for real money. Keep Paystack on test keys until roadmap Phase 2 is done. See [ROADMAP.md](ROADMAP.md).
 
 ## Getting started
 
-You need Node.js 20.9 or later (22 recommended), npm, and either Docker or a MySQL 8 server.
+You need Node.js 20.9 or later (22 recommended), npm, and either Docker or a PostgreSQL 16 server.
 
 ```bash
 git clone https://github.com/JessemQuarcks/FlowFund.git
 cd FlowFund
 npm install                 # also generates the Prisma client
 cp .env.example .env        # then fill in the blanks (see below)
-docker compose up -d        # MySQL 8.4 on localhost:3307
+docker compose up -d        # PostgreSQL 16 on localhost:5433
 npx prisma migrate dev      # create the tables
 npm run dev                 # http://localhost:3000
 ```
 
-If you use your own MySQL instead of Docker, point `DATABASE_URL` at it. The database user needs permission to create databases, because `prisma migrate dev` creates a temporary shadow database.
+If you use your own PostgreSQL instead of Docker, point `DATABASE_URL` at it. The database user needs permission to create databases, because `prisma migrate dev` creates a temporary shadow database. For a hosted demo (Neon, Render, Supabase), use the pooled connection string with `sslmode=require`.
 
 ## Environment variables
 
@@ -28,7 +28,7 @@ The app checks these when it starts (`lib/env.ts`) and refuses to boot if any ar
 
 | Variable | Required | What it is |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | MySQL connection string, `mysql://user:password@host:port/database` |
+| `DATABASE_URL` | Yes | PostgreSQL connection string, `postgresql://user:password@host:port/database` |
 | `NEXTAUTH_URL` | Except on Vercel | Public URL of the app, e.g. `http://localhost:3000` |
 | `NEXTAUTH_SECRET` | Yes | Random secret for signing sessions: `openssl rand -base64 32` |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Yes | OAuth client from the [Google Cloud console](https://console.cloud.google.com/apis/credentials). Add `<NEXTAUTH_URL>/api/auth/callback/google` as a redirect URI |
@@ -65,8 +65,7 @@ npx prisma studio                                   # browse the data
 
 - Commit the generated `prisma/migrations/*` folder with the schema change. CI fails if the two disagree.
 - Never edit a migration that has run in production. Add a new one.
-- Table names are case-sensitive on Linux MySQL. Write them exactly as the model names (`User`, `Fundraiser`), even if your local MySQL on Windows or macOS accepts any case.
-- If you created your local database before 4 October 2026, `prisma migrate dev` will say six old migrations were modified (their table names were fixed to the right case). Reset your local database with `npx prisma migrate reset`. This deletes local data.
+- PostgreSQL folds unquoted identifiers to lower case, so the models' mixed-case names (`User`, `Fundraiser`) are quoted everywhere Prisma generates SQL. In any hand-written raw SQL, quote them too (e.g. `SELECT "raisedAmount" FROM "Fundraiser"`).
 
 ## Scripts
 
@@ -78,7 +77,7 @@ npx prisma studio                                   # browse the data
 | `npm run lint` | ESLint |
 | `npm run format` / `npm run format:check` | Prettier write / check |
 | `npm test` | Unit tests (no database needed) |
-| `npm run test:integration` | Service tests against a real MySQL database |
+| `npm run test:integration` | Service tests against a real PostgreSQL database |
 | `npm run test:e2e` | Playwright end-to-end tests against a production build |
 
 ## Running tests
@@ -93,7 +92,7 @@ Integration and end-to-end tests use `TEST_DATABASE_URL`. **Every run drops all 
 
 ```bash
 docker compose up -d
-export TEST_DATABASE_URL="mysql://root:flowfund@localhost:3307/flowfund_test"
+export TEST_DATABASE_URL="postgresql://flowfund:flowfund@localhost:5433/flowfund_test"
 
 npm run test:integration
 
@@ -101,7 +100,7 @@ npx playwright install chromium   # first time only
 npm run test:e2e
 ```
 
-On Windows PowerShell, set the variable with `$env:TEST_DATABASE_URL = "mysql://root:flowfund@localhost:3307/flowfund_test"`.
+On Windows PowerShell, set the variable with `$env:TEST_DATABASE_URL = "postgresql://flowfund:flowfund@localhost:5433/flowfund_test"`.
 
 The end-to-end tests build the app and start it on port 3100 with placeholder Google, Cloudinary and Paystack keys. The donation and withdrawal flow is not covered yet; it needs the Phase 2 payment changes.
 
@@ -110,7 +109,7 @@ The end-to-end tests build the app and start it on port 3100 with placeholder Go
 `.github/workflows/ci.yml` runs on every pull request and every push to `main`:
 
 1. Typecheck, lint, Prettier check and unit tests
-2. Migration drift check and integration tests against MySQL 8.4
+2. Migration drift check and integration tests against PostgreSQL 16
 3. Production build and Playwright tests
 
 ## Project layout
